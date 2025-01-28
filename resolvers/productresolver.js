@@ -1,0 +1,167 @@
+const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { verifyTokenModerator } = require('../helpers/verify');
+const { Product, validationproduct, validationupdate } = require('../models/Product');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+dotenv.config();
+
+const resolvers = {
+    productGET: async () => {
+        try {
+            const Productlist = await Product.find();
+            if (!Productlist) {
+                return { success: false, message: 'No products found.' };
+            }
+            return Productlist;
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            return { success: false, error: error.message };
+        }
+    },
+    productGETById: async (args) => {
+        if (!mongoose.isValidObjectId(args._id)) {
+            return { success: false, message: 'Invalid product ID' };
+        }
+        const product = await Product.findById(args._id);
+        if (!product) {
+            return { success: false, message: 'Product not found' };
+        }
+        return product;
+    },
+    productCreate: async (args, context) => {
+        try {
+            const user = await verifyTokenModerator(context.req);
+            const {
+                name,
+                description,
+                richDescription,
+                images,
+                brand,
+                Price,
+                category,
+                CountINStock,
+                rating,
+                IsFeatured,
+                productdetail,
+            } = args.input;
+
+            const { error } = validationproduct.validate({
+                name,
+                description,
+                richDescription,
+                images,
+                brand,
+                Price,
+                category,
+                CountINStock,
+                rating,
+                IsFeatured,
+                productdetail,
+            });
+
+            if (error) {
+                return {
+                    product: null,
+                    message: error.details[0].message,
+                };
+            }
+
+            let imageUrls = [];
+            if (context.req && context.req.files) {
+                imageUrls = context.req.files.map(file => `${context.req.protocol}://${context.req.get('host')}/uploads/${file.filename}`);
+            }
+
+            const product = new Product({
+                name,
+                description,
+                richDescription,
+                images: imageUrls.length > 0 ? imageUrls : images,
+                brand,
+                Price,
+                category,
+                CountINStock,
+                rating,
+                IsFeatured,
+                productdetail,
+            });
+
+            const savedProduct = await product.save();
+            return {
+                product: savedProduct,
+                message: 'Product created successfully!',
+            };
+        } catch (err) {
+            console.error('Error in productCreate:', err.message);
+            return {
+                product: null,
+                message: `Server Error: ${err.message}`,
+            };
+        }
+    },
+    productDELETE: async (args, context) => {
+        try {
+            const user = await verifyTokenModerator(context.req);
+            const deletedProduct = await Product.findByIdAndDelete(args.input.productId);
+            if (!deletedProduct) {
+                return {
+                    message: 'Product not found or already deleted',
+                };
+            }
+            return {
+                username: user.username,
+                message: 'Product deleted successfully',
+            };
+        } catch (error) {
+            console.error('Error in productDELETE:', error.message);
+            return {
+                message: `Error: ${error.message}`,
+            };
+        }
+    },
+    productUpdate: async (args, context) => {
+        try {
+            const user = await verifyTokenModerator(context.req);
+            const { _id, updates } = args.input;
+
+            const { error } = validationupdate.validate(updates);
+            if (error) {
+                return {
+                    product: null,
+                    message: error.details[0].message,
+                };
+            }
+
+            if (!mongoose.isValidObjectId(_id)) {
+                return { message: 'Invalid product ID', product: null };
+            }
+
+            const updatedProduct = await Product.findByIdAndUpdate(
+                _id,
+                { $set: updates },
+                { new: true }
+            );
+
+            if (!updatedProduct) {
+                return {
+                    product: null,
+                    message: 'Product not found or update failed',
+                };
+            }
+
+            return {
+                product: updatedProduct,
+                message: 'Product updated successfully!',
+            };
+        } catch (err) {
+            console.error('Error in productUpdate:', err.message);
+            return {
+                product: null,
+                message: `Server Error: ${err.message}`,
+            };
+        }
+    },
+};
+
+module.exports = resolvers;
