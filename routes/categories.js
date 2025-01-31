@@ -11,7 +11,25 @@ const {GETschemma,POSTschemma} = require('../schemas/categoryschema');
 const resolvers = require('../resolvers/categoryresolver')
 const { createHandler } = require("graphql-http/lib/use/express");
 
+router.post('/CreateCategory',auth_jwt(), upload.single('icon'), async (req, res) => {
+    // Create the icon URL by concatenating the server URL with the file path
+    const iconUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
 
+    let category = new Category({
+        name: req.body.name,
+        icon: iconUrl,  // Store the full path to the icon
+        description: req.body.description,
+        typestore: req.body.typestore,
+    });
+
+    try {
+        category = await category.save();
+        if (!category) return res.status(404).send('The category cannot be created');
+        res.send(category);
+    } catch (error) {
+        res.status(500).send('An error occurred: ' + error.message);
+    }
+});
 
 
 /**
