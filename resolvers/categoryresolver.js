@@ -46,7 +46,7 @@ const resolvers = {
                 description,
                 typestore,
             } = args.input;
-            const iconUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
+            const iconUrl = context.req.file ? `${context.req.protocol}://${context.req.get('host')}/uploads/${context.req.file.filename}` : null;
 
             const category = new Category({
                 name,
