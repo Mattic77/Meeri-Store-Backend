@@ -5,6 +5,8 @@ const { verifyTokenModerator } = require('../helpers/verify');
 const { Product, validationproduct, validationupdate } = require('../models/Product');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const {Category} = require('../models/Category')
+
 dotenv.config();
 
 const resolvers = {
@@ -162,6 +164,22 @@ const resolvers = {
             };
         }
     },
+    productGETBycategory :async (args) => {
+        if (!mongoose.isValidObjectId(args._id)) {
+            return { product: [], message: "Invalid category ID" };
+        }
+        const category =  await Category.findById(args._id);
+        const products = await Product.find({ category: args._id });
+        if (products.length === 0) {
+            return { product: [], message: "No products found for this category" };
+        }
+    
+        return {
+            product: products,
+            category: category,
+            message: "Products fetched successfully",
+        }
+    }
 };
 
 module.exports = resolvers;
