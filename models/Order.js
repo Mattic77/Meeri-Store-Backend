@@ -4,15 +4,27 @@ const mongoose = require('mongoose');
 const { ENUM } = require('sequelize');
 const { INTEGER } = require('sequelize');
 const { STRING } = require('sequelize');
+const orderItemSchema = new mongoose.Schema({
+    quantity: {
+        type: Number,
+        required: true
+    },
+    product: {
+        type: mongoose.Types.ObjectId,
+        ref: 'Product',
+        required: true
+    }
+}, {
+    timestamps: true
+});
 
 const Orderschema = new mongoose.Schema({
     idorder: {
-      type: Number,
+      type: String,
       unique: true,
     },
     orderitems: [{
-      type: mongoose.Types.ObjectId,
-      ref: 'OrderItem',
+      type: [orderItemSchema],
       required: true,
     }],
     adress: {
@@ -32,8 +44,8 @@ const Orderschema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: ['en cours de confirmation', 'confirmé', 'en livraison', 'livré', 'annulé'],
+      default: 'en cours de confirmation',
     },
     totalprice: {
       type: Number,

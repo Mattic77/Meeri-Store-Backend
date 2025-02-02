@@ -13,12 +13,26 @@ const sendOrderEmail = require('../Email/Order/ordermail')
 const sendUpdateOrderEmail =require('../Email/Order/updateordermail')
 const incrementOrderId = async () => {
     const counter = await Counter.findOneAndUpdate(
-      { name: 'orderId' }, 
+      { name: 'orderId' },
       { $inc: { count: 1 } },
       { new: true, upsert: true }
     );
-    return counter.count; // This is the new incremented orderid
+  
+    // Generate a timestamp (e.g., YYYYMMDDHHmmss)
+    const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  
+    // Optionally add a prefix (e.g., 'ORD')
+    const prefix = 'ORD';
+  
+    // Optionally add a random alphanumeric string (e.g., 4 characters)
+    const randomString = Math.random().toString(36).substring(2, 6).toUpperCase();
+  
+    // Concatenate elements to create a complex order ID
+    const complexOrderId = `${prefix}-${timestamp}-${counter.count}-${randomString}`;
+  
+    return complexOrderId;
   };
+  
 const resolvers = {
     orderGET: async (args, context) => {
         try {
@@ -48,89 +62,82 @@ const resolvers = {
           // Extract order items from input args
           const orderitems = args.input.orderitems;
       
-          // Create order items and return their ids
-          const orderitemsids = await Promise.all(orderitems.map(async item => {
-            const quantity = Number(item.quantity); // Convert to number
-      
-            let newOrderitem = new OrderItem({
-              quantity: quantity,
-              product: item.product,
-            });
-      
-            newOrderitem = await newOrderitem.save();
-            return newOrderitem._id;
-          }));
-      
-          // Fetch order items to calculate total quantity and price
-          const orderitemsData = await OrderItem.find({ _id: { $in: orderitemsids } });
-          if (!orderitemsData.length) {
-            return {
-              message: 'No valid order items found.',
-            };
-          }
-      
-          // Fetch product details to calculate total price
-          const productIds = orderitemsData.map(item => item.product);
+          // Fetch product details to calculate total price and quantity
+          const productIds = orderitems.map(item => item.product);
           const products = await Product.find({ _id: { $in: productIds } });
       
           // Calculate total quantity and total price
-          const totalQuantity = orderitemsData.reduce((total, item) => total + item.quantity, 0);
-          const totalPrice = orderitemsData.reduce((total, item) => {
+          let totalQuantity = 0;
+          let totalPrice = 0;
+      
+          const orderItemsData = orderitems.map(item => {
+            const quantity = Number(item.quantity); // Convert to number
+            totalQuantity += quantity;
+      
             const product = products.find(p => p._id.equals(item.product));
-            if (product && product.Price) {
-              return total + (product.Price * item.quantity);
-            }
-            return total;
-          }, 0);
+            const price = product ? product.Price : 0;
+            totalPrice += price * quantity;
+      
+            return {
+              quantity,
+              product: item.product,
+            };
+          });
+      
           const orderId = await incrementOrderId();
           const order = new Order({
-            orderitems: orderitemsids,
+            orderitems: orderItemsData,
             adress: args.input.adress,
             city: args.input.city,
             postalcode: args.input.postalcode,
             phonenumber: args.input.phonenumber,
-            status: 'pending',
+            status: 'en cours de confirmation',
             totalprice: totalPrice,
             quantityOrder: totalQuantity,
             user: userT._id,
-            idorder :orderId,
+            idorder: orderId,
           });
       
           // Save the order
           const savedOrder = await order.save();
-
-
+      
           if (!savedOrder) {
             return {
               message: 'The order cannot be created',
             };
           }
-                          const userF = await User.findById(userT._id);
-                         // Construct orderDetails using products data
-                          const orderDetails = orderitemsData.map((item) => {
-                            const product = products.find(p => p._id.equals(item.product));
-                            return {
-                                productName: product ? product.name : 'Unknown Product',
-                                quantity: item.quantity,
-                                price: product ? product.Price : 0,
-                            };
-                        });
-                
-                
-                        // Send order confirmation email
-                        await sendOrderEmail({
-                            idorder:orderId,
-                            recipient: userF.email,
-                            name: userF.username,
-                            orderDetails, // Pass the orderDetails array
-                            totalPrice,
-                        });  
-          return { order: savedOrder, message: 'Order saved successfully' };
+      
+          const userF = await User.findById(userT._id);
+          // Construct orderDetails using products data
+          const orderDetails = orderitems.map((item) => {
+            const product = products.find(p => p._id.equals(item.product));
+            return {
+              productName: product ? product.name : 'Unknown Product',
+              quantity: item.quantity,
+              price: product ? product.Price : 0,
+            };
+          });
+      
+          // Send order confirmation email
+          await sendOrderEmail({
+            idorder: orderId,
+            recipient: userF.email,
+            name: userF.username,
+            orderDetails, // Pass the orderDetails array
+            totalPrice,
+          });
+      
+          return { 
+             user  : userF,
+             orderitems : orderItemsData,
+             order: savedOrder,
+             message: 'Order saved successfully' };
         } catch (error) {
           console.error('Error creating order:', error);
           throw new Error('An error occurred while creating the order.');
         }
       },
+      
       
     
     orderDELETE: async (args, context) => {
@@ -223,6 +230,27 @@ const resolvers = {
             console.error('Error updating order status:', error);
             throw new Error('An error occurred while updating the order.');
         }
+    },
+    userorderGET : async(args,context)=>{
+        try{
+        const user = await GetidfromToken(context.req)
+        const order = await Order.find({user: user._id})
+        if(!order){
+            return{
+                message : 'No order found'
+            }
+
+        }
+        return {
+            order : order,
+            message : 'Order fetched successfully'
+         }   
+
+    }catch(err){
+        return {
+            message : err.message
+        }
+    }
     }
     
 }
