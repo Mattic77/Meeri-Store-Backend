@@ -168,7 +168,11 @@ const resolvers = {
         if (!mongoose.isValidObjectId(args._id)) {
             return { product: [], message: "Invalid category ID" };
         }
+<<<<<<< HEAD
         const category =  await Category.findById(args._id);
+=======
+    
+>>>>>>> e2df8872df32db615dc2ce1564d0b22830ea760c
         const products = await Product.find({ category: args._id });
         if (products.length === 0) {
             return { product: [], message: "No products found for this category" };
@@ -176,7 +180,10 @@ const resolvers = {
     
         return {
             product: products,
+<<<<<<< HEAD
             category: category,
+=======
+>>>>>>> e2df8872df32db615dc2ce1564d0b22830ea760c
             message: "Products fetched successfully",
         }
     }
