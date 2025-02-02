@@ -6,7 +6,7 @@ const { OrderItem } = require('../models/Order_item');
 const { Product } = require('../models/Product');
 const { createHandler } = require("graphql-http/lib/use/express");
 const {GETschemma,POSTschemma} = require('../schemas/orderschema');
-const resolvers = require('../resolvers/oderresolver')
+const resolvers = require('../resolvers/orderresolver')
 
 
 
