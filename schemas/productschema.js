@@ -25,12 +25,16 @@ const GETschemma = buildSchema(`
         IsFeatured: Boolean
         productdetail: [Productdetail]
     }
-
+            type response {
+            product: [Product]
+            message: String
+        }
 
     type Query {
       
       productGETById(_id :String) : Product
        productGET: [Product] 
+       productGETBycategory(_id :String):response
     }
 
 
