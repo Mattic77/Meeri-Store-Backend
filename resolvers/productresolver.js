@@ -162,6 +162,21 @@ const resolvers = {
             };
         }
     },
+    productGETBycategory :async (args) => {
+        if (!mongoose.isValidObjectId(args._id)) {
+            return { product: [], message: "Invalid category ID" };
+        }
+    
+        const products = await Product.find({ category: args._id });
+        if (products.length === 0) {
+            return { product: [], message: "No products found for this category" };
+        }
+    
+        return {
+            product: products,
+            message: "Products fetched successfully",
+        }
+    }
 };
 
 module.exports = resolvers;
