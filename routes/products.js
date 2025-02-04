@@ -22,7 +22,7 @@ router.post('/CreateProduct',  upload.array('images', 10), async (req, res) => {
     }
 
     // Create array of file names or URLs for the uploaded images
-    const imageUrls = req.files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
+    const imageUrls = req.files.map(file => `https://meeriproject.onrender.com/uploads/${file.filename}`);
 
     // Create new Product instance with validated values and uploaded images
     let product = new Product({
