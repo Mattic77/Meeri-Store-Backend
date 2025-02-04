@@ -9,62 +9,118 @@ dotenv.config();
 
 
 const resolvers = {
-    wishlistGET:async (args,context)=>{
-        try{
-            const user =await GetidfromToken(context.req)
-            const wishlistList =  await WishList.find().populate('user').populate('product');
-            if(!wishlistList){
-                return { success: false, message: 'No wishlist found.' }
-            }    
-            return wishlistList;           
-            
-
-        }catch(error){
-            return { success: false, error: error.message }
-
-        }
-
-    },
-    wishlistGETByuser:async(args,context)=>{
-        try{
-            const user =await GetidfromToken(context.req)
-            const wishlist = await  WishList.findOne({ user: user._id }).populate('user').populate('product');
-
-            if(!wishlist){
-                return { success: false, message: 'Wishlist not found.' }
+    wishlistGET: async (args, context) => {
+        try {
+            const user = await verifyTokenModerator(context.req); 
+            const wishlistList = await WishList.findOne({ user: user._id }) 
+                .populate('user', 'username email') 
+                .populate({
+                    path: 'product',
+                    model: 'Product', 
+                    select: '_id name description Price', 
+                });
+    
+            if (!wishlistList || !wishlistList.product || wishlistList.product.length === 0) {
+                return {
+                    wishlist: null,
+                    message: 'No wishlist found.',
+                };
             }
-            return wishlist;
-        }catch(error){
-            return { success: false, error: error.message }
+    
+            return {
+                wishlist: wishlistList,
+                message: 'Wishlist retrieved successfully.',
+            };
+        } catch (error) {
+            return {
+                wishlist: null,
+                message: `Error: ${error.message}`,
+            };
         }
     },
+    
+    wishlistGETByuser: async (args, context) => {
+        try {
+            const user = await GetidfromToken(context.req); // Extract user ID from token
+            const wishlist = await WishList.findOne({ user: user._id }) // Assuming one wishlist per user
+                .populate('user', 'username email') // Populate user details
+                .populate({
+                    path: 'product',
+                    model: 'Product',
+                    select: '_id name description Price', // Only retrieve relevant fields
+                });
+    
+            if (!wishlist) {
+                return {
+                    wishlist: {
+                        user: null,
+                        product: [],
+                    },
+                    message: 'No wishlist found.',
+                };
+            }
+    
+            return {
+                wishlist: {
+                    user: wishlist.user, // Populated user details
+                    product: wishlist.product, // Populated product details
+                },
+                message: 'Wishlist retrieved successfully.',
+            };
+        } catch (error) {
+            return {
+                wishlist: {
+                    user: null,
+                    product: [],
+                },
+                message: `Error: ${error.message}`,
+            };
+        }
+    },
+    
+    
+
     wishlistcreate: async (args, context) => {
         try {
             const user = await GetidfromToken(context.req);
-            const productT =await Product.findById(args.input.product)
-            if (!productT) {
-                return { success: false, message: 'Product not found' };
+    
+            const product = await Product.findById(args.input.product);
+            if (!product) {
+                return { message: 'Product not found' };
             }
-            const wishlist = new WishList({
-                user: user._id, 
-                product: args.input.product,
-            });
-
-            // Save to the database
+    
+            let wishlist = await WishList.findOne({ user: user._id });
+    
+            if (wishlist) {
+                if (wishlist.product.some(p => p.equals(args.input.product))) {
+                    return { message: 'Product already exists in wishlist' };
+                }
+                wishlist.product.push(args.input.product);
+            } else {
+                // Create a new wishlist if it doesn't exist
+                wishlist = new WishList({
+                    user: user._id,
+                    product: [args.input.product],
+                });
+            }
+    
+            // Save the wishlist
             const savedWishlist = await wishlist.save();
+    
+            // Populate the wishlist for the response
             const populatedWishlist = await WishList.findById(savedWishlist._id)
-            .populate('user', 'username ').populate('product');
-            return {
-                wishlist: populatedWishlist,
-                message: 'Wishlist created successfully!',
-            };
+                .populate('user', 'username email') // Populate user details
+                .populate('product'); // Populate product details
+    
+            return { wishlist: populatedWishlist, message: 'Wishlist updated successfully!' };
         } catch (err) {
-            // Return null and a message if error occurs
-            return {
-                wishlist: null,  
-                message: `Server Error: ${err.message}`,
-            };
+            return { message: `Server Error: ${err.message}` };
         }
-    }
+    },
+    
+    
+    
+    
 };
-module.exports =resolvers;
+module.exports = resolvers;
+

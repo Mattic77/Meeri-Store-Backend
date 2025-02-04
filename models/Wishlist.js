@@ -1,20 +1,19 @@
 const Joi = require('joi');
-const { string } = require('joi');
 const mongoose = require('mongoose'); 
-const { ENUM } = require('sequelize');
-const { INTEGER } = require('sequelize');
-const { STRING } = require('sequelize');
+
 
 
 const wishlistschema = new mongoose.Schema({
-    product: {  // Changed to match the GraphQL schema
+    product: [{  
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
         required: true
-    },
-    user: {  // Changed to match the GraphQL schema
+    }],
+    
+    user: { 
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        required : true
     }
 }, {
     timestamps: true
@@ -23,8 +22,8 @@ const wishlistschema = new mongoose.Schema({
 const WishList = mongoose.model("Wishlist", wishlistschema);
 
 const validateWishlist = Joi.object({
-    user: Joi.string().required(),  // Changed to match Mongoose schema field names
-    product: Joi.string().required()  // Changed to match Mongoose schema field names
+    user: Joi.string().required(), 
+    product: Joi.array().items(Joi.string()).required()  
 });
 
 module.exports = { WishList, validateWishlist };

@@ -18,12 +18,25 @@ const schema = buildSchema(`
   
     type Query {
       usersGET: [User] 
-      userGETById(_id :String) :User
+      userGETById :User
       userDELETE(_id:String) : User
 
     }
   `);
   const Authschema = buildSchema(`
+       type User {
+    _id :String
+    firstname : String
+    lastname : String
+    username: String
+    email: String
+    phonenumber : String
+    wilaya : String
+    commune : String
+    code_postal : String
+    adresse : String
+
+  }
     input logininput{
     email: String
     password : String}
@@ -60,13 +73,17 @@ const schema = buildSchema(`
 
     }
         input deleteinput{
-        token :String 
         password: String
+        new_password : String
 
     }
   type Query {
     _empty: String
   }
+    type responseedituser{
+    user : User
+    message: String
+    }
     type response {
     username : String
     token: String
@@ -77,10 +94,11 @@ const schema = buildSchema(`
       userRegister(input :registerinput) : response
       userLogin(input: logininput) : response
       userDELETE(input: deleteinput) : response
-      userEdit(input:edituserinput) : response
+      userEdit(input:edituserinput) : responseedituser
       userChangePassword(input: passwordchancheinput): response
       userChangeEmail(input: emailchancheinput): response
       userForgotPassword(input: forgotpasswordinput): response
+
     }
     
     `)

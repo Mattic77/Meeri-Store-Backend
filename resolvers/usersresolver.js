@@ -8,7 +8,8 @@ dotenv.config();
 const sendemailauth = require('../Email/User/Auth');
 const sendemailrestpass = require('../Email/User/Forgetpass');
 const crypto = require('crypto');
-const verifyTokenAdmin = require('../helpers/verify')
+const {GetidfromToken,verifyTokenAdmin} = require('../helpers/verify')
+
 const generateResetToken = () => {
     return crypto.randomBytes(32).toString('hex');
 };
@@ -24,20 +25,20 @@ const resolvers = {
         }
       },
   
-    userGETById: async (args) => {
+    userGETById: async (args,context) => {
       try {
-        
-        const user = await User.findById(args._id).select('-passwordhash');
+
+        const Userid = await GetidfromToken(context.req)
+        const user = await User.findById(Userid._id).select('-passwordhash');
         return user;  
       } catch (err) {
         console.error(err);
         throw new Error('User not found');
       }
     },
-    productDELETE : async (args) =>{
-        const decoded = await jwt.verify(args.input.token,process.env.JWT_SECRET)
-        console.log(decoded);
-        const user = await User.findById(decoded.user_id);
+    userDELETE : async (args,context) =>{
+        const userF = await GetidfromToken(context.req)
+        const user = await User.findById(userF._id);
         if (user) {
             const ismatch = await bcrypt.compare(args.input.password,user.passwordhash)
             if(!ismatch){
@@ -72,7 +73,7 @@ const resolvers = {
             const hashedPassword = await bcrypt.hash(passwordhash, salt);
     
             // Generate a username
-            const username = `${firstname}${lastname}`.replace(/\s+/g, '').toLowerCase(); // Remove spaces and lowercase
+            const username = `${firstname} ${lastname}`.replace(/\s+/g, '').toLowerCase(); // Remove spaces and lowercase
     
             // Create the user
             newUser = new User({
@@ -165,50 +166,41 @@ const resolvers = {
             return { message: 'An error occurred while processing your request' };
         }
     },
-    userEdit : async (args,context)=>{
-        try {
-        const {
-            firstname,
-            lastname ,
-            username,
-            phonenumber,
-            wilaya ,
-            commune ,
-            code_postal ,
-            adresse ,
-        } = args.input;
-        const req = context.req;
-                    const authHeader = req.headers['authorization'];
-                    if (!authHeader) {
-                        return { message: 'Authorization header missing' };
-                    }
-        
-                    const token = authHeader.split(' ')[1];
-                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+userEdit: async (args, context) => {
+  try {
+    const userID = await GetidfromToken(context.req);
+    console.log('Extracted User ID:', userID);
 
-        const user = await User.findByIdAndUpdate(decoded.user_id, {  
-            firstname,
-            lastname ,
-            username,
-            phonenumber,
-            wilaya ,
-            commune ,
-            code_postal ,
-            adresse  });
-        if (user) {
-            return {
-                username: user.username,
-                message: 'User updated successfully',
-            };
-        } else {
-            return {
-                message: 'User not found',
-            };
-        }}catch (error) {
-            console.error('Error on updating data:', error);
-            return { message: 'An error occurred while processing your request' };
-        }
-    },
+    const user = await User.findByIdAndUpdate(
+      userID._id, 
+      {
+        firstname: args.input.firstname,
+        lastname: args.input.lastname,
+        username: args.input.username,
+        phonenumber: args.input.phonenumber,
+        wilaya: args.input.wilaya,
+        commune: args.input.commune,
+        code_postal: args.input.code_postal,
+        adresse: args.input.adresse,
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!user) {
+      return {
+        message: 'User not found',
+      };
+    }
+
+    return {
+      user: user, // Return the updated user's username
+      message: 'User updated successfully',
+    };
+  } catch (error) {
+    console.error('Error on updating data:', error);
+    return { message: 'An error occurred while processing your request' };
+  }
+},
      userChangeEmail : async (args, context) => {
         const { newemail, password } = args.input;
         const req = context.req;
@@ -285,7 +277,8 @@ const resolvers = {
         const message = `Hi ${user.firstname},\n\nYou requested to reset your password. Click the link below to reset it:\n\n${resetLink}\n\nIf you didn't request this, please ignore this email.`;
         await sendemailrestpass({ recipients: user.email, message ,name :user.username,});
     
-        return { message: "Password reset link sent to your email." };}
+        return { message: "Password reset link sent to your email." };
+    },
 
     };
 

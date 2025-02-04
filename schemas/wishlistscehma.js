@@ -25,18 +25,27 @@ const GETschemma = buildSchema(`
         IsFeatured: Boolean
         productdetail: [Productdetail]
     }
-        type User{
+
+    type User{
         username : String
         email: String
         }
 
     type wishlist {
-        product: Product
+        product: [Product]
         user: User
     }
+
+
+
+    type Response {
+        wishlist: wishlist
+        message: String
+    }
+
     type Query {
-      wishlistGETBy : wishlist
-      wishlistGET: [wishlist]
+      wishlistGETByuser : Response
+      wishlistGET: Response
         }
 `);
 
@@ -72,12 +81,13 @@ const POSTschemma = buildSchema(`
         }
 
     type wishlist {
-        product: Product
+        product: [Product]
         user: User
     }
 
     input inputWishlist {
         product: ID
+        user: ID
     }
 
     type Response {

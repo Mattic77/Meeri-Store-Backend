@@ -5,7 +5,6 @@ const { Product } = require('../models/Product');
 const {verifyTokenModerator,GetidfromToken} = require('../helpers/verify')
 const moment = require('moment');
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 dotenv.config();

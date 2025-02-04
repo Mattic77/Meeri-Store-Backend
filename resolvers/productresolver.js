@@ -165,6 +165,7 @@ const resolvers = {
         }
     },
     productGETBycategory :async (args) => {
+        try{
         if (!mongoose.isValidObjectId(args._id)) {
             return { product: [], message: "Invalid category ID" };
         }
@@ -173,12 +174,15 @@ const resolvers = {
         if (products.length === 0) {
             return { product: [], message: "No products found for this category" };
         }
-    
+        const categoryF = Category.findById(args._id);
         return {
+            category: categoryF,
             product: products,
             message: "Products fetched successfully",
         }
+    }catch(err){
+        return {message: err.message}
     }
-};
+},}
 
 module.exports = resolvers;

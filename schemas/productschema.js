@@ -25,7 +25,20 @@ const GETschemma = buildSchema(`
         IsFeatured: Boolean
         productdetail: [Productdetail]
     }
-            type response {
+    enum Typestore {
+        accessoire
+        vetement
+    }
+
+    type Category {
+        _id: String
+        name: String
+        icon: String
+        description: String
+        typestore: Typestore
+    }
+    type response {
+            category: Category
             product: [Product]
             message: String
         }
