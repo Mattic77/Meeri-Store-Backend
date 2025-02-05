@@ -23,10 +23,10 @@ const Orderschema = new mongoose.Schema({
       type: String,
       unique: true,
     },
-    orderitems: [{
+    orderitems: {
       type: [orderItemSchema],
       required: true,
-    }],
+    },
     adress: {
       type: String,
       required: true,

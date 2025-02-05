@@ -45,9 +45,10 @@ const GETschemma = buildSchema(`
 
     type Query {
       
-      productGETById(_id :String) : Product
+       productGETById(_id :String) : Product
        productGET: [Product] 
        productGETBycategory(_id :String):response
+       productGETByname(name :String): Product
     }
 
 

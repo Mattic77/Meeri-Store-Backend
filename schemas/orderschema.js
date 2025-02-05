@@ -19,13 +19,39 @@ const DateScalar = new GraphQLScalarType({
 });
 
 const GETschemma = buildSchema(`
+      type Productsize{
+    size : String
+    stock : Int
+    }
+    
+
+    type Productdetail{
+    color : String
+    sizes: [Productsize]
+
+    }
+      type Product{
+        _id :String
+        name: String
+        description: String
+        richDescription: String
+        images: [String]
+        brand: String
+        Price: Int
+        category:String
+        CountINStock:Int
+        rating: Int
+        IsFeatured: Boolean
+        productdetail: [Productdetail]
+    }
   type OrderItem {
     _id: ID
     quantity: Int
-    product: ID
+    product: Product
     createdAt: Date
     updatedAt: Date
   }
+
 
   type User {
     _id: ID

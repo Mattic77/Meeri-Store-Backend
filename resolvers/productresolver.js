@@ -32,6 +32,19 @@ const resolvers = {
         }
         return product;
     },
+    productGETByname:async (args)=>{
+        try {
+            const product = await Product.findOne({ name: args.name });
+            if (!product) {
+                return { success: false, message: 'Product not found' };
+            }
+            return product;
+        } catch (error) {
+            console.error('Error fetching product:', error);
+            return { success: false, error: error.message };
+        }
+
+    },
     productCreate: async (args, context) => {
         try {
             const user = await verifyTokenModerator(context.req);

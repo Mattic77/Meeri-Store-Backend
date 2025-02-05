@@ -1,26 +1,54 @@
 const { buildSchema } = require("graphql");
 
 const GETschemma = buildSchema(`
-        type productinfo{
-        Productid : ID
-        quantityselect: Int
-        sum : Int
+
+        type Productsize{
+    size : String
+    stock : Int
+    }
+    
+
+    type Productdetail{
+    color : String
+    sizes: [Productsize]
 
     }
-    type User{
+    type Product{
+        _id :String
+        name: String
+        description: String
+        richDescription: String
+        images: [String]
+        brand: String
+        Price: Int
+        category:String
+        CountINStock:Int
+        rating: Int
+        IsFeatured: Boolean
+        productdetail: [Productdetail]
+    }
+
+    type User {
         username : String
         email: String
-        }
+        firstname: String
+        lastname: String
+    }
+    type productinfo {
+        Productid : Product
+        quantityselect: Int
+        sum : Int
+    }
     type cart {
-        ProductList : productinfo
+        _id : ID
+        ProductList : [productinfo]
         userid : User
         total : Int
     }
     type Query {
         cartGETByuser : cart
         cartlistGET: [cart]
-        
-        }
+    }
 `);
 
 const POSTschemma = buildSchema(`

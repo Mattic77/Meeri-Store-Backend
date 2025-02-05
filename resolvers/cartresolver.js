@@ -65,22 +65,26 @@ const resolvers = {
             throw new Error("Failed to create or update cart.");
         }
     },
-    cartGETByuser : async(args,context)=>{
-        try{
-            const user = await GetidfromToken(context.req);
-            const cart = await Cart.find({ userid: user._id });
-            if(cart){
-                return cart;
-            }
-            else{
+    cartGETByuser: async (args, context) => {
+        try {
+            const user = await GetidfromToken(context.req); // Get user from the token
+            const cart = await Cart.find({ userid: user._id })
+                .populate('userid') // Populate user details
+                .populate('ProductList.Productid'); // Populate product details in ProductList
+    
+            if (cart && cart.length > 0) {
+                console.log(cart)
+    
+                return cart; // Return the cart as it matches the GraphQL schema
+            } else {
                 throw new Error("Cart not found");
             }
-        }
-        catch(error){
+        } catch (error) {
             console.error("Error in cartGETByuser:", error.message);
             throw new Error("Failed to get cart.");
         }
     }
+    
 
 }
 
