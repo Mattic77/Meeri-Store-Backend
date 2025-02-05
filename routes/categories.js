@@ -13,7 +13,7 @@ const { createHandler } = require("graphql-http/lib/use/express");
 
 router.post('/CreateCategory',auth_jwt(), upload.single('icon'), async (req, res) => {
     // Create the icon URL by concatenating the server URL with the file path
-    const iconUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : null;
+    const iconUrl = req.file ? `https://meeriproject.onrender.com/uploads/${req.file.filename}` : null;
 
     let category = new Category({
         name: req.body.name,
