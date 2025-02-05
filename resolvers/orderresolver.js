@@ -38,8 +38,21 @@ const resolvers = {
             const user = await verifyTokenModerator(context.req); 
      
             const Orderlist = await Order.find()
-                .populate('user', 'username _id')
-                .populate('orderitems', 'product quantity _id createdAt updatedAt');
+    .populate('user', 'username _id')
+    .populate({
+        path: 'orderitems',
+        select: 'product quantity _id createdAt updatedAt',
+        populate: {
+            path: 'product', // Assuming "product" is a reference to another collection
+            select: 'name
+                        description
+                        richDescription
+                        brand
+                        Price
+                        category
+                        CountINStock' // Adjust fields you want to return from the "product" model
+        }
+    });
      
             // Format the createdAt and updatedAt fields before returning
             Orderlist.forEach(order => {
