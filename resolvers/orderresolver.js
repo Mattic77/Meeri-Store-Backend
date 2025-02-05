@@ -33,40 +33,20 @@ const incrementOrderId = async () => {
   };
   
 const resolvers = {
-    orderGET: async (args, context) => {
+    orderGET: async () => {
         try {
-            const user = await verifyTokenModerator(context.req); 
-     
-            const Orderlist = await Order.find()
-    .populate('user', 'username _id')
-    .populate({
-        path: 'orderitems',
-        select: 'product quantity _id createdAt updatedAt',
-        populate: {
-            path: 'product', // Assuming "product" is a reference to another collection
-            select: 'name
-                        description
-                        richDescription
-                        brand
-                        Price
-                        category
-                        CountINStock' // Adjust fields you want to return from the "product" model
-        }
-    });
-     
-            // Format the createdAt and updatedAt fields before returning
-            Orderlist.forEach(order => {
-                order.createdAt = moment(order.createdAt).format('YYYY-MM-DD');  // You can customize the format
-                order.updatedAt = moment(order.updatedAt).format('YYYY-MM-DD');
-                order.dateordered = moment(order.dateordered).format('YYYY-MM-DD');
-            });
-     
-            return Orderlist; 
+          const orders = await Order.find({})
+          .populate('user', 'username')
+          .populate('orderitems.product', 'name description');
+      console.log(JSON.stringify(orders, null, 2));
+        
+
+                  
+          return orders;
         } catch (error) {
-            console.error('Error fetching orders:', error);
-            return { message: error.message };
+          throw new Error('Error fetching orders: ' + error.message);
         }
-     },
+      },
      createOrder: async (args, context) => {
         try {
           const userT = await GetidfromToken(context.req);
@@ -246,7 +226,8 @@ const resolvers = {
     userorderGET : async(args,context)=>{
         try{
         const user = await GetidfromToken(context.req)
-        const order = await Order.find({user: user._id})
+        const order = await Order.find({user: user._id}).populate('user', 'username').populate('orderitems.product');
+        console.log(order)
         if(!order){
             return{
                 message : 'No order found'
