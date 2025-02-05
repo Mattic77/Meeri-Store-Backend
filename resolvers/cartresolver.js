@@ -65,7 +65,7 @@ const resolvers = {
             throw new Error("Failed to create or update cart.");
         }
     },
-    cartGETByuser: async (args, context) => {
+        cartGETByuser: async (args, context) => {
         try {
             const user = await GetidfromToken(context.req); 
             const cart = await Cart.find({ userid: user._id })
