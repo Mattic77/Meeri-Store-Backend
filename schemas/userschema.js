@@ -98,6 +98,7 @@ const schema = buildSchema(`
       userChangePassword(input: passwordchancheinput): response
       userChangeEmail(input: emailchancheinput): response
       userForgotPassword(input: forgotpasswordinput): response
+      userLogout : response
 
     }
     

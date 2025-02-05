@@ -74,7 +74,7 @@ router.post('createcart',jwt(),async(req,res) =>{
 
         res.status(201).send(cart);
     } catch (error) {
-        res.status(500).send({ message: error.message });
+        res.status(500).send({ message: error });
     }
 })
 module.exports = router;

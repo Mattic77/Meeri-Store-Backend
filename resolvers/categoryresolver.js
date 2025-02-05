@@ -21,7 +21,7 @@ const resolvers = {
             return categories;
         } catch (error) {
             console.error('Error fetching categories:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: error};
         }
     },
     

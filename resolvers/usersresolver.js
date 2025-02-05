@@ -126,22 +126,23 @@ const resolvers = {
             process.env.JWT_SECRET,
             {expiresIn : "1w"}
         );
-    
+        
         return { username: user.username, token: token, message:" User logged in  successfully "};
+    },
+    userLogout: async()=>{
+        try{
+            
+
+        }catch(error){
+
+        }
+
     },
     userChangePassword :async (args,context)=>{
         try {
         const { oldpassword, password } = args.input;
-        const req = context.req;
-                    const authHeader = req.headers['authorization'];
-                    if (!authHeader) {
-                        return { message: 'Authorization header missing' };
-                    }
-        
-                    const token = authHeader.split(' ')[1];
-                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        const user = await User.findById(decoded.user_id);
+        const userF = await verifyTokenAdmin(context.req)
+        const user = await User.findById(userF._id);
         if (user) {
             const isMatch = await bcrypt.compare(oldpassword, user.passwordhash);
             if(!isMatch){

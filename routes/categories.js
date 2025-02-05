@@ -11,6 +11,7 @@ const {GETschemma,POSTschemma} = require('../schemas/categoryschema');
 const resolvers = require('../resolvers/categoryresolver')
 const { createHandler } = require("graphql-http/lib/use/express");
 
+
 router.post('/CreateCategory',auth_jwt(), upload.single('icon'), async (req, res) => {
     // Create the icon URL by concatenating the server URL with the file path
     const iconUrl = req.file ? `https://meeriproject.onrender.com/uploads/${req.file.filename}` : null;
@@ -51,6 +52,7 @@ router.use('/categoryGET',
  * @route /api/products
  * @access public
  */
+
 router.use('/categoryPOST', 
     (req, res) => {
         createHandler({

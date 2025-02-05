@@ -65,45 +65,45 @@ const resolvers = {
             throw new Error("Failed to create or update cart.");
         }
     },
-        cartGETByuser: async (args, context) => {
-        try {
-            const user = await GetidfromToken(context.req); 
-            const cart = await Cart.find({ userid: user._id })
-                .populate('userid') 
-                .populate('ProductList.Productid'); 
-    
-            if (cart && cart.length > 0) {
-                // Transform the cart data to match the GraphQL schema
-                const transformedCart = cart.map(cartItem => ({
-                    _id: cartItem._id.toString(),
-                    ProductList: cartItem.ProductList.map(productInfo => ({
-                        Productid: {
-                            _id: productInfo.Productid._id.toString(),
-                            name: productInfo.Productid.name,
-                            description: productInfo.Productid.description,
-                            Price: productInfo.Productid.Price,
-                        },
-                        quantityselect: productInfo.quantityselect,
-                        sum: productInfo.sum,
-                    })),
-                    userid: {
-                        username: cartItem.userid.username,
-                        email: cartItem.userid.email,
-                        firstname: cartItem.userid.firstname,
-                        lastname: cartItem.userid.lastname,
+cartGETByuser: async (args, context) => {
+    try {
+        const user = await GetidfromToken(context.req); // Get user from the token
+        const cart = await Cart.find({ userid: user._id })
+            .populate('userid') // Populate user details
+            .populate('ProductList.Productid'); // Populate product details in ProductList
+
+        if (cart && cart.length > 0) {
+            // Transform the cart data to match the GraphQL schema
+            const transformedCart = cart.map(cartItem => ({
+                _id: cartItem._id.toString(),
+                ProductList: cartItem.ProductList.map(productInfo => ({
+                    Productid: {
+                        _id: productInfo.Productid._id.toString(),
+                        name: productInfo.Productid.name,
+                        description: productInfo.Productid.description,
+                        Price: productInfo.Productid.Price,
                     },
-                    total: cartItem.total,
-                }));
-    
-                return transformedCart[0]; // Return the transformed cart
-            } else {
-                throw new Error("Cart not found");
-            }
-        } catch (error) {
-            console.error("Error in cartGETByuser:", error.message);
-            throw new Error("Failed to get cart.");
+                    quantityselect: productInfo.quantityselect,
+                    sum: productInfo.sum,
+                })),
+                userid: {
+                    username: cartItem.userid.username,
+                    email: cartItem.userid.email,
+                    firstname: cartItem.userid.firstname,
+                    lastname: cartItem.userid.lastname,
+                },
+                total: cartItem.total,
+            }));
+
+            return transformedCart[0]; // Return the transformed cart
+        } else {
+            throw new Error("Cart not found");
         }
+    } catch (error) {
+        console.error("Error in cartGETByuser:", error.message);
+        throw new Error("Failed to get cart.");
     }
+}
     
 
 }
