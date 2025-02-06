@@ -61,6 +61,8 @@ const GETschemma = buildSchema(`
   scalar Date
 
   type Order {
+    firstname : String
+    lastname : String
     _id: ID
     idorder: String 
     orderitems: [OrderItem]
@@ -106,6 +108,8 @@ const POSTschemma = buildSchema(`
   scalar Date
 
   type Order {
+    firstname : String
+    lastname : String
     _id: ID
     idorder: String 
     orderitems: [OrderItem]
@@ -128,6 +132,8 @@ const POSTschemma = buildSchema(`
   }
 
   input OrderInput {
+    firstname : String
+    lastname : String
     orderitems: [OrderItemInput]
     adress: String
     city: String

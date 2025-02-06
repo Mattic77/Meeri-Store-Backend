@@ -51,7 +51,6 @@ const resolvers = {
         try {
           const userT = await GetidfromToken(context.req);
       
-          // Extract order items from input args
           const orderitems = args.input.orderitems;
       
           // Fetch product details to calculate total price and quantity

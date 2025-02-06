@@ -19,6 +19,14 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const Orderschema = new mongoose.Schema({
+    firstname :{
+      type: String,
+      required:  false
+    },
+    lastname :{
+      type: String,
+      required:  false
+    },
     idorder: {
       type: String,
       unique: true,
