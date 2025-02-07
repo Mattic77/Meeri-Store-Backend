@@ -89,6 +89,9 @@ const POSTschemma = buildSchema(`
         product: ID
         user: ID
     }
+    input inputWishlistdelete{
+        product: ID
+    }    
 
     type Response {
         wishlist: wishlist
@@ -101,6 +104,8 @@ const POSTschemma = buildSchema(`
 
     type Mutation {
         wishlistcreate(input: inputWishlist): Response
+        wishlistdeleteproduct(input: inputWishlist): Response
+
     }
 `);
 
