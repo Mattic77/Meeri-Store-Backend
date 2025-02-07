@@ -117,6 +117,40 @@ const resolvers = {
             return { message: `Server Error: ${err.message}` };
         }
     },
+    wishlistdeleteproduct: async (args, context) => {
+        try {
+            // Extract user ID from the token
+            const user = await GetidfromToken(context.req);
+    
+            // Find the user's wishlist
+            const wishlist = await WishList.findOne({ user: user._id });
+    
+            if (!wishlist) {
+                return {
+                    message: "Wishlist not found",
+                };
+            }
+    
+            // Remove the product from the wishlist
+            const productId = args.input.product; // Get the product ID from input
+            wishlist.product = wishlist.product.filter(
+                (product) => product.toString() !== productId
+            );
+    
+            // Save the updated wishlist
+            await wishlist.save();
+    
+            return {
+                message: "Product removed from wishlist successfully",
+            };
+        } catch (error) {
+            console.error("Error deleting wishlist:", error.message);
+            return {
+                message: `Error: ${error.message}`,
+            };
+        }
+    },
+    
     
     
     
