@@ -31,7 +31,6 @@ mongoose
 
 app.use(cors());
 app.use(express.json());
-app.use(auth_jwt());
 app.use(errorhandler);
 app.use(`${API}/products`, products);
 app.use(`${API}/users`, users);
