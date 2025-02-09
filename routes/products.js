@@ -12,9 +12,17 @@ const { verifyTokenModerator } = require('../helpers/verify');
 
 router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
     try {
-        // Validate request body against Joi validation schema
-        const  value = req.body;
+        
+        // Parse productdetail from JSON string to array of objects
+        if (req.body.productdetail) {
+            req.body.productdetail = JSON.parse(req.body.productdetail);
+        }
 
+        // Validate request body against Joi validation schema
+        const { error, value } = validationproduct.validate(req.body);
+        if (error) {
+            return res.status(400).send(error.details[0].message);
+        }
 
         // Verify the token and get the user
         const user = await verifyTokenModerator(req);
@@ -37,7 +45,7 @@ router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
             CountINStock: value.CountINStock,
             rating: value.rating,
             IsFeatured: value.IsFeatured,
-            productdetail: value.productdetail
+            productdetail: value.productdetail, // Already parsed as an array of objects
         });
 
         // Save the product to the database
