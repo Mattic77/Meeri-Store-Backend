@@ -12,7 +12,6 @@ const { verifyTokenModerator } = require('../helpers/verify');
 
 router.post('/CreateProduct',  upload.array('images', 10), async (req, res) => {
     // Validate request body against Joi validation schema
-    const { error, value } = validationproduct.validate(req.body);
     const user = await verifyTokenModerator(context.req);
 
     
