@@ -10,7 +10,13 @@ const GETschemma = buildSchema(`
         color: String
         sizes: [Productsize]
     }
-
+        type Category {
+        _id: String
+        name: String
+        icon: String
+        description: String
+        typestore: Typestore
+    }
     type Product {
         _id: String
         name: String
@@ -19,7 +25,7 @@ const GETschemma = buildSchema(`
         images: [String]
         brand: String
         Price: Int
-        category: String
+        category: Category
         CountINStock: Int
         rating: Int
         IsFeatured: Boolean
