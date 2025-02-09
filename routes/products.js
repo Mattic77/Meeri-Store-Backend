@@ -12,7 +12,7 @@ const { verifyTokenModerator } = require('../helpers/verify');
 
 router.post('/CreateProduct',  upload.array('images', 10), async (req, res) => {
     // Validate request body against Joi validation schema
-    const user = await verifyTokenModerator(context.req);
+    const user = await verifyTokenModerator(req);
 
     
     // If validation fails, send a 400 response with error message
