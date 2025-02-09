@@ -12,8 +12,12 @@ dotenv.config();
 const resolvers = {
     productGET: async () => {
         try {
-            const Productlist = await Product.find();
-            if (!Productlist) {
+            const Productlist = await Product.find()
+            .populate({
+                path: 'category', // Populate the category field
+                model: 'Category', // Specify the model to populate
+                select: 'name', // Only retrieve the category name
+            });            if (!Productlist) {
                 return { success: false, message: 'No products found.' };
             }
             return Productlist;
