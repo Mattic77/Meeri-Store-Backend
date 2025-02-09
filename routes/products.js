@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const { Product} = require('../models/Product');
+const { Product,validationproduct} = require('../models/Product');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' }); 
 const {GETschemma,POSTschemma} = require('../schemas/productschema');
@@ -10,42 +10,49 @@ const { createHandler } = require("graphql-http/lib/use/express");
 const { verifyTokenModerator } = require('../helpers/verify');
 
 
-router.post('/CreateProduct',  upload.array('images', 10), async (req, res) => {
-    // Validate request body against Joi validation schema
-    const { error, value } = validationproduct.validate(req.body);
-    const user = await verifyTokenModerator(context.req);
-
-    
-    // If validation fails, send a 400 response with error message
-    if (error) {
-        return res.status(400).send(error.details[0].message);
-    }
-
-    // Create array of file names or URLs for the uploaded images
-    const imageUrls = req.files.map(file => `https://meeriproject.onrender.com/uploads/${file.filename}`);
-
-    // Create new Product instance with validated values and uploaded images
-    let product = new Product({
-        name: value.name,
-        description: value.description,
-        richDescription: value.richDescription,
-        images: imageUrls, // Store array of image URLs
-        brand: value.brand,
-        Price: value.Price,
-        category: value.category,
-        CountINStock: value.CountINStock,
-        rating: value.rating,
-        IsFeatured: value.IsFeatured,
-        productdetail: value.productdetail
-    });
-
+router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
     try {
+        
+        // Parse productdetail from JSON string to array of objects
+        if (req.body.productdetail) {
+            req.body.productdetail = JSON.parse(req.body.productdetail);
+        }
+
+        // Validate request body against Joi validation schema
+        const { error, value } = validationproduct.validate(req.body);
+        if (error) {
+            return res.status(400).send(error.details[0].message);
+        }
+
+        // Verify the token and get the user
+        const user = await verifyTokenModerator(req);
+        if (!user) {
+            return res.status(401).send('Unauthorized');
+        }
+
+        // Handle image uploads
+        const imageUrls = req.files ? req.files.map(file => `https://meeriproject.onrender.com/uploads/${file.filename}`) : [];
+
+        // Create a new product instance
+        let product = new Product({
+            name: value.name,
+            description: value.description,
+            richDescription: value.richDescription,
+            images: imageUrls, // Store array of image URLs
+            brand: value.brand,
+            Price: value.Price,
+            category: value.category,
+            CountINStock: value.CountINStock,
+            rating: value.rating,
+            IsFeatured: value.IsFeatured,
+            productdetail: value.productdetail, // Already parsed as an array of objects
+        });
+
         // Save the product to the database
         product = await product.save();
-        // Send the created product back as a response with 201 status code
         res.status(201).send(product);
     } catch (err) {
-        // In case of error during saving, send a 500 error response
+        console.error('Server Error:', err);
         res.status(500).send('Server Error: ' + err.message);
     }
 });
