@@ -12,23 +12,50 @@ const resolvers = require('../resolvers/categoryresolver')
 const { createHandler } = require("graphql-http/lib/use/express");
 
 
-router.post('/CreateCategory',auth_jwt(), upload.single('icon'), async (req, res) => {
-    // Create the icon URL by concatenating the server URL with the file path
-    const iconUrl = req.file ? `https://meeriproject.onrender.com/uploads/${req.file.filename}` : null;
-
-    let category = new Category({
-        name: req.body.name,
-        icon: iconUrl,  // Store the full path to the icon
-        description: req.body.description,
-        typestore: req.body.typestore,
-    });
-
+router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
     try {
-        category = await category.save();
-        if (!category) return res.status(404).send('The category cannot be created');
-        res.send(category);
-    } catch (error) {
-        res.status(500).send('An error occurred: ' + error.message);
+        
+        // Parse productdetail from JSON string to array of objects
+        if (req.body.productdetail) {
+            req.body.productdetail = JSON.parse(req.body.productdetail);
+        }
+
+        // Validate request body against Joi validation schema
+        const { error, value } = validationproduct.validate(req.body);
+        if (error) {
+            return res.status(400).send(error.details[0].message);
+        }
+
+        // Verify the token and get the user
+        const user = await verifyTokenModerator(req);
+        if (!user) {
+            return res.status(401).send('Unauthorized');
+        }
+
+        // Handle image uploads
+        const imageUrls = req.files ? req.files.map(file => `https://meeriproject.onrender.com/uploads/${file.filename}`) : [];
+
+        // Create a new product instance
+        let product = new Product({
+            name: value.name,
+            description: value.description,
+            richDescription: value.richDescription,
+            images: imageUrls, // Store array of image URLs
+            brand: value.brand,
+            Price: value.Price,
+            category: value.category,
+            CountINStock: value.CountINStock,
+            rating: value.rating,
+            IsFeatured: value.IsFeatured,
+            productdetail: value.productdetail, // Already parsed as an array of objects
+        });
+
+        // Save the product to the database
+        product = await product.save();
+        res.status(201).send(product);
+    } catch (err) {
+        console.error('Server Error:', err);
+        res.status(500).send('Server Error: ' + err.message);
     }
 });
 
