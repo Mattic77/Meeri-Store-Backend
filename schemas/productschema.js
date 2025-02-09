@@ -19,7 +19,7 @@ const GETschemma = buildSchema(`
         images: [String]
         brand: String
         Price: Int
-        category:String
+        category:Category
         CountINStock:Int
         rating: Int
         IsFeatured: Boolean
