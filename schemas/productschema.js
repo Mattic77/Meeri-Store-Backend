@@ -19,7 +19,7 @@ const GETschemma = buildSchema(`
         images: [String]
         brand: String
         Price: Int
-        category:String
+        category:Category
         CountINStock:Int
         rating: Int
         IsFeatured: Boolean
@@ -31,11 +31,8 @@ const GETschemma = buildSchema(`
     }
 
     type Category {
-        _id: String
         name: String
-        icon: String
-        description: String
-        typestore: Typestore
+
     }
     type response {
             category: Category
@@ -49,6 +46,7 @@ const GETschemma = buildSchema(`
        productGET: [Product] 
        productGETBycategory(_id :String):response
        productGETByname(name :String): Product
+       featuredproductGET: [Product]
     }
 
 

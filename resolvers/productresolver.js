@@ -12,8 +12,13 @@ dotenv.config();
 const resolvers = {
     productGET: async () => {
         try {
-            const Productlist = await Product.find();
-            if (!Productlist) {
+            const Productlist = await Product.find()
+            .populate({
+                path: 'category', // Populate the category field
+                model: 'Category', // Specify the model to populate
+                select: 'name', // Only retrieve the category name
+            });
+                        if (!Productlist) {
                 return { success: false, message: 'No products found.' };
             }
             return Productlist;
@@ -196,6 +201,24 @@ const resolvers = {
     }catch(err){
         return {message: err.message}
     }
-},}
+},
+featuredproductGET :async ()=>{
+    try {
+        const Productlist = await Product.find({IsFeatured : true})
+        .populate({
+            path: 'category', // Populate the category field
+            model: 'Category', // Specify the model to populate
+            select: 'name', // Only retrieve the category name
+        });
+                    if (!Productlist) {
+            return { success: false, message: 'No products found.' };
+        }
+        return Productlist;
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        return { success: false, error: error.message };
+    }
+}
+}
 
 module.exports = resolvers;
