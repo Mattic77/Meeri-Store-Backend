@@ -206,9 +206,9 @@ featuredproductGET :async ()=>{
     try {
         const Productlist = await Product.find({IsFeatured : true})
         .populate({
-            path: 'category', // Populate the category field
-            model: 'Category', // Specify the model to populate
-            select: 'name', // Only retrieve the category name
+            path: 'category', 
+            model: 'Category', 
+            select: 'name', 
         });
                     if (!Productlist) {
             return { success: false, message: 'No products found.' };
