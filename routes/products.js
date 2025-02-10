@@ -89,20 +89,8 @@ router.use(
 
 
 
-/**
- * @desc get featured products
- * @method get
- * @route /api/products/isfeatured
- * @access public
- */
-router.get('/isfeatured', async (req, res) => {
-    try {
-        const isfeatured = await Product.find({ IsFeatured: true });
-        res.status(200).send(isfeatured);
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
+
+
 
 
 module.exports = router;
