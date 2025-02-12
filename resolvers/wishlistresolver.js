@@ -42,13 +42,18 @@ const resolvers = {
     wishlistGETByuser: async (args, context) => {
         try {
             const user = await GetidfromToken(context.req); // Extract user ID from token
-            const wishlist = await WishList.findOne({ user: user._id }) // Assuming one wishlist per user
-                .populate('user', 'username email') // Populate user details
-                .populate({
-                    path: 'product',
-                    model: 'Product',
-                    select: '_id name description Price category images', // Only retrieve relevant fields
-                });
+const wishlist = await WishList.findOne({ user: user._id }) // Assuming one wishlist per user
+    .populate('user', 'username email') // Populate user details
+    .populate({
+        path: 'product',
+        model: 'Product',
+        select: '_id name description Price category images', // Only retrieve relevant fields
+        populate: {
+            path: 'category', // Populate the category field inside the product
+            model: 'Category', // Specify the model to populate
+            select: 'name', // Only retrieve the category name
+        },
+    });
     
             if (!wishlist) {
                 return {
