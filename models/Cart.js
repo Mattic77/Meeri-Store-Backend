@@ -1,5 +1,5 @@
-const Joi = require('joi');
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');
+
 const productInfoSchema = new mongoose.Schema({
     Productid: {
         type: mongoose.Types.ObjectId,
@@ -39,4 +39,3 @@ const cartSchema = new mongoose.Schema({
 
 const Cart = mongoose.model('Cart', cartSchema);
 module.exports = Cart;
-

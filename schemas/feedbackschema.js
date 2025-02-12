@@ -46,7 +46,7 @@ const GETschemma = buildSchema(`
     }
 
     type Query {
-        feedbackproductGET: feedback
+        feedbackproductGET(_id : String ): feedback
     }
 `);
 
@@ -65,6 +65,14 @@ const POSTschemma = buildSchema(`
     product: ID
     userfeedback : Userfeedback
     }
+    input deletefeedback{
+        product: ID!
+    }
+        input deleteUserfeedbackInput {
+    product: ID! # ID of the product associated with the feedback
+    userId: ID!  # ID of the user whose feedback is to be deleted
+}
+    
 
     type Query {
             _empty : String
@@ -74,6 +82,8 @@ const POSTschemma = buildSchema(`
     }
     type Mutation {
         ADDfeedback(input: inputfeedback): Response
+        DELETEfeedback(input: deletefeedback): Response
+        DELETEfeedbackAdmin(input: deleteUserfeedbackInput) : Response
     }
 `);
 

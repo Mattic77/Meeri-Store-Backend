@@ -37,10 +37,7 @@ const GETschemma = buildSchema(`
         CategoryGET: [Category]
     }
 
-    type Mutation {
-        categoryCreate(input: InputCategory!): Response
-        categoryDelete(input: DeleteInput!): Response
-    }
+
 `);
 const POSTschemma = buildSchema(`
         

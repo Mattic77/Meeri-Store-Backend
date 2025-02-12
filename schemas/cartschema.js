@@ -54,46 +54,80 @@ const GETschemma = buildSchema(`
 `);
 
 const POSTschemma = buildSchema(`
-type productinfo {
-    Productid: ID
-    quantityselect: Int
-    sum: Int
-    color: String
-    size: String
-}
+        type Productsize{
+    size : String
+    stock : Int
+    }
+    
 
-    type User{
+    type Productdetail{
+    color : String
+    sizes: [Productsize]
+
+    }
+    type Product{
+        _id :String
+        name: String
+        description: String
+        richDescription: String
+        images: [String]
+        brand: String
+        Price: Int
+        category:String
+        CountINStock:Int
+        rating: Int
+        IsFeatured: Boolean
+        productdetail: [Productdetail]
+    }
+    
+    type User {
         username : String
         email: String
-        }
+        firstname: String
+        lastname: String
+    }
+    type productinfo {
+        Productid : Product
+        quantityselect: Int
+        sum : Int
+        color : String
+        size : String
+    }
     type cart {
-        ProductList: [productinfo]
-        userid: ID
-        total: Int
+        _id : ID
+        ProductList : [productinfo]
+        userid : User
+        total : Int
+    }
+    input productinfoInput {
+        Productid: ID!
+        quantityselect: Int!
+        sum: Int!
+        color: String!
+        size: String!
+    }
+    input deleteproduct{
+    Productid: ID!
     }
 
-input productinfoInput {
-    Productid: ID!
-    quantityselect: Int!
-    sum: Int!
-    color: String!
-    size: String!
-}
-
-
     input inputcart {
-        ProductList: [productinfoInput]
+        ProductList: productinfoInput! # Accepts a single product
     }
 
     type Query {
             _empty : String
         }
+    type responsedelte {
+    message: String
+    }        
     type Response {
         cart: cart
         message: String
     }
     type Mutation {
         cartcreate(input: inputcart): Response
+        DeleteProductfromcart(input:deleteproduct) :Response
+
     }
 `);
 
