@@ -11,6 +11,12 @@ const GETschemma = buildSchema(`
         sizes: [Productsize]
     }
 
+
+
+    type Category {
+        name: String
+
+    }
     type Product {
         _id: String
         name: String

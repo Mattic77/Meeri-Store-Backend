@@ -47,7 +47,7 @@ const resolvers = {
                 .populate({
                     path: 'product',
                     model: 'Product',
-                    select: '_id name description Price', // Only retrieve relevant fields
+                    select: '_id name description Price category images', // Only retrieve relevant fields
                 });
     
             if (!wishlist) {

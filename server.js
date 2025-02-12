@@ -12,6 +12,8 @@ const orders = require('./routes/orders');
 const categories = require('./routes/categories');
 const wishlists = require('./routes/wishlists');
 const carts = require('./routes/carts');
+const feedbacks = require('./routes/feedbacks');
+
 const path = require('path');
 
 
@@ -38,6 +40,8 @@ app.use(`${API}/categories`, categories);
 app.use(`${API}/orders`, orders);
 app.use(`${API}/wishlists`, wishlists);
 app.use(`${API}/carts`, carts);
+app.use(`${API}/feedbacks`, feedbacks);
+
 
 
 

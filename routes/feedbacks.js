@@ -1,13 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
-const { WishList, validateWishlist } = require('../models/Wishlist');
-const { Product } = require('../models/Product');
-const { User } = require('../models/User');
-const verifyToken = require('../helpers/verify');
-const resolvers = require('../resolvers/wishlistresolver')
-const {GETschemma,POSTschemma} = require('../schemas/wishlistscehma');
+const resolvers = require('../resolvers/feedbackresolver')
+const {GETschemma,POSTschemma} = require('../schemas/feedbackschema');
 const { createHandler } = require("graphql-http/lib/use/express");
+
 
 
 /**
@@ -16,7 +12,7 @@ const { createHandler } = require("graphql-http/lib/use/express");
  * @route /api/wishlists
  * @access public
  */
-router.use('/wishlistGET', 
+router.use('/feedbackGET', 
     (req, res) => {
 
     createHandler({
@@ -33,7 +29,7 @@ router.use('/wishlistGET',
  * @access public
  */
 router.use(
-    '/wishlistPOST',
+    '/feedbackPOST',
     (req, res) => {
         createHandler({
             schema: POSTschemma,
@@ -46,3 +42,5 @@ router.use(
 
 
 module.exports = router;
+
+

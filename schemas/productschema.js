@@ -31,7 +31,10 @@ const GETschemma = buildSchema(`
     }
 
     type Category {
+        _id : String
         name: String
+        description: String
+        icon : String
 
     }
     type response {

@@ -27,7 +27,7 @@ const GETschemma = buildSchema(`
         IsFeatured: Boolean
         productdetail: [Productdetail]
     }
-
+    
     type User {
         username : String
         email: String
@@ -38,6 +38,8 @@ const GETschemma = buildSchema(`
         Productid : Product
         quantityselect: Int
         sum : Int
+        color : String
+        size : String
     }
     type cart {
         _id : ID
@@ -52,12 +54,14 @@ const GETschemma = buildSchema(`
 `);
 
 const POSTschemma = buildSchema(`
-        type productinfo{
-        Productid : ID
-        quantityselect: Int
-        sum : Int
+type productinfo {
+    Productid: ID
+    quantityselect: Int
+    sum: Int
+    color: String
+    size: String
+}
 
-    }
     type User{
         username : String
         email: String
@@ -68,11 +72,14 @@ const POSTschemma = buildSchema(`
         total: Int
     }
 
-    input productinfoInput {
-        Productid: ID
-        quantityselect: Int
-        sum: Int
-    }
+input productinfoInput {
+    Productid: ID!
+    quantityselect: Int!
+    sum: Int!
+    color: String!
+    size: String!
+}
+
 
     input inputcart {
         ProductList: [productinfoInput]

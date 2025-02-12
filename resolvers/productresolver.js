@@ -31,7 +31,11 @@ const resolvers = {
         if (!mongoose.isValidObjectId(args._id)) {
             return { success: false, message: 'Invalid product ID' };
         }
-        const product = await Product.findById(args._id);
+        const product = await Product.findById(args._id).populate({
+            path: 'category', // Populate the category field
+            model: 'Category', // Specify the model to populate
+            select: 'name', // Only retrieve the category name
+        });
         if (!product) {
             return { success: false, message: 'Product not found' };
         }
@@ -39,7 +43,11 @@ const resolvers = {
     },
     productGETByname:async (args)=>{
         try {
-            const product = await Product.findOne({ name: args.name });
+            const product = await Product.findOne({ name: args.name }).populate({
+                path: 'category', // Populate the category field
+                model: 'Category', // Specify the model to populate
+                select: 'name _id ', // Only retrieve the category name
+            });
             if (!product) {
                 return { success: false, message: 'Product not found' };
             }
@@ -206,9 +214,9 @@ featuredproductGET :async ()=>{
     try {
         const Productlist = await Product.find({IsFeatured : true})
         .populate({
-            path: 'category', // Populate the category field
-            model: 'Category', // Specify the model to populate
-            select: 'name', // Only retrieve the category name
+            path: 'category', 
+            model: 'Category', 
+            select: 'name', 
         });
                     if (!Productlist) {
             return { success: false, message: 'No products found.' };
