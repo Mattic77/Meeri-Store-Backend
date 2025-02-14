@@ -34,8 +34,10 @@ const resolvers = {
                 size: product.size || "defaultSize",
             }));
     
-            let userCart = await Cart.findOne({ userid: user._id });
-    
+            let userCart = await Cart.findOne({ userid: user._id })
+            .populate('ProductList.Productid') // Populate product details
+            .populate('userid'); // Populate user details
+            
             if (userCart) {
                 ProductList.forEach((newProduct) => {
                     const existingProduct = userCart.ProductList.find(
