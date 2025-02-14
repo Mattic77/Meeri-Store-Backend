@@ -102,7 +102,6 @@ const POSTschemma = buildSchema(`
     input productinfoInput {
         Productid: ID!
         quantityselect: Int!
-        sum: Int!
         color: String!
         size: String!
     }
