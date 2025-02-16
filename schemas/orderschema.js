@@ -129,11 +129,12 @@ const POSTschemma = buildSchema(`
   input OrderItemInput {
     quantity: Int
     product: ID
+    color : String
+    size : String
   }
 
   input OrderInput {
-    firstname : String
-    lastname : String
+
     orderitems: [OrderItemInput]
     adress: String
     city: String
@@ -151,6 +152,17 @@ const POSTschemma = buildSchema(`
     _id: String
     statusUpdate: String  
   }
+      input OrderInputAnonym {
+    firstname : String
+    lastname : String
+    orderitems: [OrderItemInput]
+    adress: String
+    city: String
+    postalcode: String
+    phonenumber: String
+    totalprice: Float
+    quantityOrder: Int
+  }
 
   type Response {
    orderitems :[OrderItem]
@@ -165,6 +177,8 @@ const POSTschemma = buildSchema(`
 
   type Mutation {
     createOrder(input: OrderInput): Response
+    createOrderAnonym(input: OrderInputAnonym): Response
+
     updateOrderStatus(input: statusINPUT): Response
     orderDELETE(input: DeleteInput): Response
   }

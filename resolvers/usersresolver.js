@@ -2,7 +2,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose'); 
 const dotenv = require('dotenv');
 dotenv.config();
 const sendemailauth = require('../Email/User/Auth');

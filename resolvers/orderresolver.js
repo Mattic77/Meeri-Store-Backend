@@ -47,7 +47,7 @@ const resolvers = {
           throw new Error('Error fetching orders: ' + error.message);
         }
       },
-     createOrder: async (args, context) => {
+      createOrder: async (args, context) => {
         try {
           const userT = await GetidfromToken(context.req);
       
@@ -72,11 +72,15 @@ const resolvers = {
             return {
               quantity,
               product: item.product,
+              color: item.color, // Add color from input
+              size: item.size, // Add size from input
             };
           });
       
           const orderId = await incrementOrderId();
           const order = new Order({
+            firstname: userT.firstname,
+            lastname: userT.lastname,
             orderitems: orderItemsData,
             adress: args.input.adress,
             city: args.input.city,
@@ -99,6 +103,7 @@ const resolvers = {
           }
       
           const userF = await User.findById(userT._id);
+      
           // Construct orderDetails using products data
           const orderDetails = orderitems.map((item) => {
             const product = products.find(p => p._id.equals(item.product));
@@ -106,6 +111,8 @@ const resolvers = {
               productName: product ? product.name : 'Unknown Product',
               quantity: item.quantity,
               price: product ? product.Price : 0,
+              color: item.color, // Include color in order details
+              size: item.size, // Include size in order details
             };
           });
       
@@ -118,8 +125,73 @@ const resolvers = {
             totalPrice,
           });
       
+          return {
+            user: userF,
+            orderitems: orderItemsData,
+            order: savedOrder,
+            message: 'Order saved successfully',
+          };
+        } catch (error) {
+          console.error('Error creating order:', error);
+          throw new Error('An error occurred while creating the order.');
+        }
+      },
+    createOrderAnonym : async (args, context) => {
+        try {
+          
+          const orderitems = args.input.orderitems;
+      
+          // Fetch product details to calculate total price and quantity
+          const productIds = orderitems.map(item => item.product);
+          const products = await Product.find({ _id: { $in: productIds } });
+      
+          // Calculate total quantity and total price
+          let totalQuantity = 0;
+          let totalPrice = 0;
+      
+          const orderItemsData = orderitems.map(item => {
+            const quantity = Number(item.quantity); // Convert to number
+            totalQuantity += quantity;
+      
+            const product = products.find(p => p._id.equals(item.product));
+            const price = product ? product.Price : 0;
+            totalPrice += price * quantity;
+      
+            return {
+              quantity,
+              product: item.product,
+              color: item.color, 
+              size: item.size, 
+            };
+          });
+      
+          const orderId = await incrementOrderId();
+          const order = new Order({
+            firstname : args.input.firstname,
+            lastname : args.input.lastname,
+            orderitems: orderItemsData,
+            adress: args.input.adress,
+            city: args.input.city,
+            postalcode: args.input.postalcode,
+            phonenumber: args.input.phonenumber,
+            status: 'en cours de confirmation',
+            totalprice: totalPrice,
+            quantityOrder: totalQuantity,
+            idorder: orderId,
+          });
+      
+          // Save the order
+          const savedOrder = await order.save();
+      
+          if (!savedOrder) {
+            return {
+              message: 'The order cannot be created',
+            };
+          }
+      
+
+      
           return { 
-             user  : userF,
              orderitems : orderItemsData,
              order: savedOrder,
              message: 'Order saved successfully' };
@@ -128,6 +200,7 @@ const resolvers = {
           throw new Error('An error occurred while creating the order.');
         }
       },
+      
       
       
     

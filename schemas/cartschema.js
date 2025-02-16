@@ -112,7 +112,13 @@ const POSTschemma = buildSchema(`
     input inputcart {
         ProductList: productinfoInput! # Accepts a single product
     }
+    input incrementinput{
+            Productid: ID
+            color :String
+            size :String    
 
+
+    }
     type Query {
             _empty : String
         }
@@ -126,6 +132,9 @@ const POSTschemma = buildSchema(`
     type Mutation {
         cartcreate(input: inputcart): Response
         DeleteProductfromcart(input:deleteproduct) :Response
+        incrementquantity(input : incrementinput):Response
+        discrementquantity(input : incrementinput):Response
+
 
     }
 `);

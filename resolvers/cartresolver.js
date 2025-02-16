@@ -14,70 +14,79 @@ const resolvers = {
     
             let { ProductList } = args.input;
     
-            // Check if the product exists
-            const checkproduct = await Product.findById(ProductList.Productid);
-            if (!checkproduct) {
-                return { message: "Product not found" };
-            }
-    
             // Wrap into an array if not already
             if (!Array.isArray(ProductList)) {
                 ProductList = [ProductList];
             }
     
-            // Map and calculate `sum` for each product
-            ProductList = ProductList.map((product) => ({
-                Productid: new mongoose.Types.ObjectId(product.Productid),
-                quantityselect: product.quantityselect || 1,
-                sum: checkproduct.Price * (product.quantityselect || 1), // Calculate dynamically here
-                color: product.color || "defaultColor",
-                size: product.size || "defaultSize",
-            }));
-    
+            // Fetch the user's cart
             let userCart = await Cart.findOne({ userid: user._id })
-            .populate('ProductList.Productid') // Populate product details
-            .populate('userid'); // Populate user details
-            
-            if (userCart) {
-                ProductList.forEach((newProduct) => {
+            .populate({
+                path: 'ProductList.Productid', 
+                model: 'Product', 
+            })
+            .populate('userid'); 
+    
+            // Process each product in the input
+            for (const product of ProductList) {
+                // Check if the product exists in the database
+                const checkproduct = await Product.findById(product.Productid);
+                if (!checkproduct) {
+                    return { message: `Product with ID ${product.Productid} not found` };
+                }
+    
+                // Prepare the new product data
+                const newProduct = {
+                    Productid: new mongoose.Types.ObjectId(product.Productid),
+                    quantityselect: product.quantityselect || 1,
+                    sum: checkproduct.Price * (product.quantityselect || 1), // Calculate dynamically here
+                    color: product.color || "defaultColor",
+                    size: product.size || "defaultSize",
+                };
+    
+                if (userCart) {
+                    // Check if the product already exists in the cart
                     const existingProduct = userCart.ProductList.find(
-                        (p) => p.Productid.toString() === newProduct.Productid.toString()
+                        (p) =>
+                            p.Productid.toString() === newProduct.Productid.toString() &&
+                            p.color === newProduct.color &&
+                            p.size === newProduct.size
                     );
     
                     if (existingProduct) {
+                        // Increment the quantity and update the sum
                         existingProduct.quantityselect += newProduct.quantityselect;
                         existingProduct.sum += newProduct.sum;
                     } else {
+                        // Add as a new product if it doesn't already exist
                         userCart.ProductList.push(newProduct);
                     }
-                });
+                } else {
+                    // Create a new cart if it doesn't exist
+                    userCart = new Cart({
+                        userid: user._id,
+                        ProductList: [newProduct],
+                        total: newProduct.sum,
+                    });
+                }
+            }
     
-                // Recalculate the total
+            // Recalculate the total for the cart
+            if (userCart) {
                 userCart.total = userCart.ProductList.reduce((acc, p) => acc + p.sum, 0);
                 await userCart.save();
-    
-                return {
-                    cart: userCart,
-                    message: "Product(s) added to the existing cart successfully.",
-                };
-            } else {
-                const newCart = new Cart({
-                    userid: user._id,
-                    ProductList,
-                    total: ProductList.reduce((acc, p) => acc + p.sum, 0),
-                });
-                await newCart.save();
-    
-                return {
-                    cart: newCart,
-                    message: "New cart created successfully.",
-                };
             }
+    
+            return {
+                cart: userCart,
+                message: userCart ? "Product(s) added to the cart successfully." : "New cart created successfully.",
+            };
         } catch (error) {
             console.error("Error in cartcreate:", error.message, error);
             throw new Error("Failed to create or update cart.");
         }
     },
+    
     
     
     
@@ -162,8 +171,138 @@ const resolvers = {
             console.error("Error in DeleteProductfromcart:", error.message);
             throw new Error("Failed to delete product from cart.");
         }
-    }
+    },
+    incrementquantity: async (args, context) => {
+        try {
+            const user = await GetidfromToken(context.req);
     
+            const { Productid, color, size } = args.input;
+    
+            // Find the user's cart and populate ProductList.Productid
+            const userCart = await Cart.findOne({ userid: user._id })
+                .populate({
+                    path: 'ProductList.Productid', 
+                    model: 'Product', 
+                })
+                .populate('userid'); 
+    
+            if (!userCart) {
+                return { message: "Cart not found for the user." };
+            }
+    
+            // Find the product in the cart
+            const productInCart = userCart.ProductList.find(
+                (p) =>
+                    p.Productid._id.toString() === Productid && // Use p.Productid._id to match
+                    p.color === color &&
+                    p.size === size
+            );
+    
+            if (!productInCart) {
+                return { message: "Product not found in the cart." };
+            }
+    
+            // Fetch the product details from the database to get the latest price
+            const product = await Product.findById(Productid);
+            if (!product) {
+                return { message: "Product not found in the database." };
+            }
+    
+            // Increment the quantity by 1
+            productInCart.quantityselect += 1;
+    
+            // Recalculate the sum for the product
+            productInCart.sum = product.Price * productInCart.quantityselect;
+    
+            // Recalculate the total for the cart
+            userCart.total = userCart.ProductList.reduce((acc, p) => acc + p.sum, 0);
+    
+            // Save the updated cart
+            await userCart.save();
+    
+            return {
+                cart: userCart,
+                message: "Product quantity incremented successfully.",
+            };
+        } catch (error) {
+            console.error("Error in incrementquantity:", error.message, error);
+            throw new Error("Failed to increment product quantity.");
+        }
+    },
+    discrementquantity: async (args, context) => {
+        try {
+            const user = await GetidfromToken(context.req);
+    
+            const { Productid, color, size } = args.input;
+    
+            // Find the user's cart and populate ProductList.Productid
+            const userCart = await Cart.findOne({ userid: user._id })
+                .populate({
+                    path: 'ProductList.Productid', // Populate the Productid field in ProductList
+                    model: 'Product', // Specify the model to populate from
+                })
+                .populate('userid'); // Populate user details
+    
+            if (!userCart) {
+                return { message: "Cart not found for the user." };
+            }
+    
+            // Find the product in the cart
+            const productInCart = userCart.ProductList.find(
+                (p) =>
+                    p.Productid._id.toString() === Productid && // Use p.Productid._id.toString()
+                    p.color === color &&
+                    p.size === size
+            );
+    
+            if (!productInCart) {
+                return { message: "Product not found in the cart." };
+            }
+    
+            // Fetch the product details from the database to get the latest price
+            const product = await Product.findById(Productid);
+            if (!product) {
+                return { message: "Product not found in the database." };
+            }
+    
+            // Decrement the quantity by 1
+            productInCart.quantityselect -= 1;
+    
+            // If quantity reaches 0, remove the product from the cart
+            if (productInCart.quantityselect <= 0) {
+                userCart.ProductList = userCart.ProductList.filter(
+                    (p) =>
+                        p.Productid._id.toString() !== Productid || // Use p.Productid._id.toString()
+                        p.color !== color ||
+                        p.size !== size
+                );
+            } else {
+                // Recalculate the sum for the product
+                productInCart.sum = product.Price * productInCart.quantityselect;
+            }
+    
+            // Recalculate the total for the cart
+            userCart.total = userCart.ProductList.reduce((acc, p) => acc + p.sum, 0);
+    
+            // Save the updated cart
+            await userCart.save();
+    
+            // Fetch the updated cart with populated fields
+            const lastupdatecart = await Cart.findOne({ userid: user._id })
+                .populate('userid') // Populate user details
+                .populate('ProductList.Productid'); // Populate product details in ProductList
+    
+            return {
+                cart: lastupdatecart,
+                message: productInCart.quantityselect <= 0
+                    ? "Product removed from the cart."
+                    : "Product quantity decremented successfully.",
+            };
+        } catch (error) {
+            console.error("Error in discrementquantity:", error.message, error);
+            throw new Error("Failed to decrement product quantity.");
+        }
+    },
 
 
 }
