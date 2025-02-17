@@ -89,7 +89,7 @@ const resolvers = {
             commune: args.input.commune || userT.commune,
             phonenumber: args.input.phonenumber || userT.phonenumber,
             status: 'en cours de confirmation',
-            totalprice: totalPrice,
+            totalprice: totalPrice + args.input.livprice,
             quantityOrder: totalQuantity,
             user: userT._id,
             idorder: orderId,
@@ -178,7 +178,7 @@ const resolvers = {
             commune: args.input.commune,
             phonenumber: args.input.phonenumber,
             status: 'en cours de confirmation',
-            totalprice: totalPrice,
+            totalprice: totalPrice+args.input.livprice,
             quantityOrder: totalQuantity,
             idorder: orderId,
           });

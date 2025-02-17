@@ -24,13 +24,15 @@ const orderItemSchema = new mongoose.Schema({
     },
     priceproduct :{
       type: Number,
-      required: true,
     }
 }, {
     timestamps: true
 });
 
 const Orderschema = new mongoose.Schema({
+    livprice :{
+      type: Number,
+    },
     firstname :{
       type: String,
       required:  false

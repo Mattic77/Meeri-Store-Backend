@@ -33,6 +33,9 @@ const GETschemma = buildSchema(`
         email: String
         firstname: String
         lastname: String
+        wilaya : String
+        commune : String
+        adress : String
     }
     type productinfo {
         Productid : Product

@@ -168,7 +168,7 @@ const POSTschemma = buildSchema(`
   }
 
   input OrderInput {
-
+    livprice : Int
     orderitems: [OrderItemInput]
     adress: String
     wilaya: String
@@ -187,6 +187,7 @@ const POSTschemma = buildSchema(`
     statusUpdate: String  
   }
     input OrderInputAnonym {
+      livprice : Int
       firstname : String
       lastname : String
       email :String

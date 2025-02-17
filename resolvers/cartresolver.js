@@ -119,6 +119,10 @@ const resolvers = {
                         email: cartItem.userid.email,
                         firstname: cartItem.userid.firstname,
                         lastname: cartItem.userid.lastname,
+                        wilaya :cartItem.userid.wilaya,
+                        commune : cartItem.userid.commune,
+                        phonenumber: cartItem.userid.phonenumber,
+                        adress : cartItem.userid.adress
                     },
                     total: cartItem.total,
                 }));
