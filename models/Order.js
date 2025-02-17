@@ -35,6 +35,10 @@ const Orderschema = new mongoose.Schema({
       type: String,
       required:  false
     },
+    email :{
+      type: String,
+      required:  false
+    },
     idorder: {
       type: String,
       unique: true,
@@ -47,11 +51,11 @@ const Orderschema = new mongoose.Schema({
       type: String,
       required: true,
     },
-    city: {
+    wilaya: {
       type: String,
       required: true,
     },
-    postalcode: {
+    commune: {
       type: String,
       required: true,
     },
