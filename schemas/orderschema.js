@@ -47,11 +47,13 @@ const GETschemma = buildSchema(`
   type OrderItem {
     _id: ID
     quantity: Int
+    size : String
+    color : String
     product: Product
     createdAt: Date
     updatedAt: Date
   }
-    
+
 
 
   type User {
