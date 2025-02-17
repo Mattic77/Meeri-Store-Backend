@@ -21,6 +21,10 @@ const orderItemSchema = new mongoose.Schema({
     size :{
       type: String,
       required: true,
+    },
+    priceproduct :{
+      type: Number,
+      required: true,
     }
 }, {
     timestamps: true

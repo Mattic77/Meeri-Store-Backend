@@ -73,7 +73,8 @@ const resolvers = {
               quantity,
               product: item.product,
               color: item.color, // Add color from input
-              size: item.size, // Add size from input
+              size: item.size, 
+              priceproduct: price * quantity, // Calculate priceproduct
             };
           });
       

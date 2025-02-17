@@ -50,6 +50,7 @@ const GETschemma = buildSchema(`
     size : String
     color : String
     product: Product
+    priceproduct :Int
     createdAt: Date
     updatedAt: Date
   }
@@ -96,12 +97,40 @@ const GETschemma = buildSchema(`
 `);
 
 const POSTschemma = buildSchema(`
+   type Productsize{
+    size : String
+    stock : Int
+    }
+    
+
+    type Productdetail{
+    color : String
+    sizes: [Productsize]
+
+    }
+      type Product{
+        _id :String
+        name: String
+        description: String
+        richDescription: String
+        images: [String]
+        brand: String
+        Price: Int
+        category:String
+        CountINStock:Int
+        rating: Int
+        IsFeatured: Boolean
+        productdetail: [Productdetail]
+    }
   type OrderItem {
     _id: ID
     quantity: Int
-    product: ID
-    createdAt: String
-    updatedAt: String
+    size : String
+    color : String
+    product: Product
+    priceproduct :Int
+    createdAt: Date
+    updatedAt: Date
   }
 
   type User {
