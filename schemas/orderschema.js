@@ -51,6 +51,7 @@ const GETschemma = buildSchema(`
     createdAt: Date
     updatedAt: Date
   }
+    
 
 
   type User {
@@ -63,12 +64,13 @@ const GETschemma = buildSchema(`
   type Order {
     firstname : String
     lastname : String
+    email: String
     _id: ID
     idorder: String 
     orderitems: [OrderItem]
     adress: String
-    city: String
-    postalcode: String
+    wilaya: String
+    commune : String
     phonenumber: String
     status: String
     totalprice: Float
@@ -110,12 +112,13 @@ const POSTschemma = buildSchema(`
   type Order {
     firstname : String
     lastname : String
+    email : String
     _id: ID
     idorder: String 
     orderitems: [OrderItem]
     adress: String
-    city: String
-    postalcode: String
+    wilaya: String
+    commune : String
     phonenumber: String
     status: String
     totalprice: Float
@@ -137,8 +140,8 @@ const POSTschemma = buildSchema(`
 
     orderitems: [OrderItemInput]
     adress: String
-    city: String
-    postalcode: String
+    wilaya: String
+    commune : String
     phonenumber: String
     totalprice: Float
     quantityOrder: Int
@@ -152,16 +155,17 @@ const POSTschemma = buildSchema(`
     _id: String
     statusUpdate: String  
   }
-      input OrderInputAnonym {
-    firstname : String
-    lastname : String
-    orderitems: [OrderItemInput]
-    adress: String
-    city: String
-    postalcode: String
-    phonenumber: String
-    totalprice: Float
-    quantityOrder: Int
+    input OrderInputAnonym {
+      firstname : String
+      lastname : String
+      email :String
+      orderitems: [OrderItemInput]
+      adress: String
+      wilaya: String
+      commune : String
+      phonenumber: String
+      totalprice: Float
+      quantityOrder: Int
   }
 
   type Response {
