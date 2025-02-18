@@ -60,6 +60,7 @@ const GETschemma = buildSchema(`
   type User {
     _id: ID
     username: String
+    phonenumber : String
   }
 
   scalar Date
@@ -136,6 +137,7 @@ const POSTschemma = buildSchema(`
   type User {
     _id: ID
     username: String
+    phonenumber : String
   }
 
   scalar Date
