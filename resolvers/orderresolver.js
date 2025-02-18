@@ -36,8 +36,8 @@ const resolvers = {
     orderGET: async () => {
         try {
           const orders = await Order.find({})
-          .populate('user', 'username')
-          .populate('orderitems.product', 'name description');
+          .populate('user')
+          .populate('orderitems.product');
       console.log(JSON.stringify(orders, null, 2));
         
 
