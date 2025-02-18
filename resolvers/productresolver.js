@@ -133,6 +133,12 @@ const resolvers = {
     productDELETE: async (args, context) => {
         try {
             const user = await verifyTokenModerator(context.req);
+            const isPasswordValid = await bcrypt.compare(args.input.password, user.passwordhash);
+            if (!isPasswordValid) {
+                return {
+                    message: 'Invalid password',
+                };
+            }
             const deletedProduct = await Product.findByIdAndDelete(args.input.productId);
             if (!deletedProduct) {
                 return {

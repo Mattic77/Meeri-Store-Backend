@@ -20,6 +20,38 @@ router.get('/countorders', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+router.get('/countordersconfirm', async (req, res) => {
+    try {
+        const user = await  verifyTokenModerator(req)
+        const countorders = await Order.countDocuments({status : "confirmé"});
+        res.status(200).send({ success: true, count: countorders });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+router.get('/totalprice', async (req, res) => {
+    try {
+        const user = await verifyTokenModerator(req); // Verify if the user is authorized
+
+        // Aggregate total price of all orders
+        const totalPrice = await Order.aggregate([
+            {
+                $group: {
+                    _id: null, // Group all documents together
+                    total: { $sum: "$totalprice" }, // Sum the `totalprice` field
+                }
+            }
+        ]);
+
+        // Extract the total price value from the result
+        const total = totalPrice.length > 0 ? totalPrice[0].total : 0;
+
+        res.status(200).send({ success: true, totalPrice: total });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 
 /**
  * @desc GET Product 
