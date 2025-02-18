@@ -7,10 +7,19 @@ const { Product } = require('../models/Product');
 const { createHandler } = require("graphql-http/lib/use/express");
 const {GETschemma,POSTschemma} = require('../schemas/orderschema');
 const resolvers = require('../resolvers/orderresolver')
+const {verifyTokenModerator,GetidfromToken} = require('../helpers/verify')
 
 
 
-
+router.get('/countorders', async (req, res) => {
+    try {
+        const user = await  verifyTokenModerator(req)
+        const countorders = await Order.countDocuments();
+        res.status(200).send({ success: true, count: countorders });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 /**
  * @desc GET Product 

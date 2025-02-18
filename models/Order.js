@@ -4,6 +4,13 @@ const mongoose = require('mongoose');
 const { ENUM } = require('sequelize');
 const { INTEGER } = require('sequelize');
 const { STRING } = require('sequelize');
+const formatDate = (date) => {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
 const orderItemSchema = new mongoose.Schema({
     quantity: {
         type: Number,
@@ -87,6 +94,7 @@ const Orderschema = new mongoose.Schema({
     dateordered: {
       type: Date,
       default: Date.now,
+      get: formatDate,
     },
   }, {
     timestamps: true,
