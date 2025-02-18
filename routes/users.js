@@ -8,7 +8,9 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose'); 
 const { createHandler } = require("graphql-http/lib/use/express");
 const {schema,Authschema} = require('../schemas/userschema');
-const resolvers = require('../resolvers/usersresolver')
+const resolvers = require('../resolvers/usersresolver');
+const {verifyTokenModerator,GetidfromToken} = require('../helpers/verify')
+
 
 
 
@@ -62,6 +64,7 @@ router.use(
 
 router.get('/countusers', async (req, res) => {
     try {
+        const user = await  verifyTokenModerator(req)
         const userstcount = await User.countDocuments();
         res.status(200).send({ success: true, count: userstcount });
     } catch (err) {
