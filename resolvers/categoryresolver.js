@@ -8,6 +8,15 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
 dotenv.config();
+const cloudinary = require ('cloudinary').v2
+
+dotenv.config();
+cloudinary.config({
+    cloud_name : "djbdanrbf",
+    secure : true,
+    api_key : process.env.CLOUD_API_KEY,
+    api_secret : process.env.CLOUD_SECRET_KEY
+})
 
 const resolvers = {
 
@@ -69,12 +78,35 @@ const resolvers = {
             };
     }
     },
-    categoryDELETE : async (args)=>{
+    categoryDELETE : async (args,context)=>{
         try {
             const user =await verifyTokenModerator(context.req)
-
-
-            const deleteCategory = await Category.findByIdAndDelete(args.input.productId);
+            const isPasswordValid = await bcrypt.compare(args.input.password, user.passwordhash);
+            if (!isPasswordValid) {
+                return {
+                    message: 'Invalid password',
+                };
+            }
+            const category = await Category.findById(args.input.categoryId);
+            if (!category) {
+                return {
+                    message: 'Category not found',
+                };
+            }
+    
+            // If the category has an associated image, delete it from Cloudinary
+            if (category.icon) {
+                const publicId = category.icon.split('/').pop().split('.')[0]; // Extract the public ID
+                await cloudinary.uploader.destroy(`categories/${publicId}`, (error, result) => {
+                    if (error) {
+                        console.error('Error deleting image from Cloudinary:', error.message);
+                    } else {
+                        console.log('Image deleted from Cloudinary:', result);
+                    }
+                });
+            }
+    
+            const deleteCategory = await Category.findByIdAndDelete(args.input.categoryId);
             if (!deleteCategory) {
                 return {
                     message: 'Category not found or already deleted',
@@ -91,28 +123,7 @@ const resolvers = {
                 message: `Error: ${error.message}`,
             };
         }
-    },categoryDELETE: async ({ input }) => {
-        const { categoryId, token, password } = input;
-        try {
-            const Vuser =await verifyTokenModerator(context.req)
-
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            const user = await User.findById(decoded.user_id);
-
-            const isMatch = await bcrypt.compare(password, user.passwordhash);
-            if (!isMatch) {
-                return { message: 'Password mismatch' };
-            }
-            const deletedCategory = await Category.findByIdAndDelete(categoryId);
-            if (!deletedCategory) {
-                return { message: 'Category not found or already deleted' };
-            }
-            return { category: deletedCategory, message: 'Category deleted successfully' };
-        } catch (error) {
-            console.error('Error in categoryDELETE:', error.message);
-            return { message: `Error: ${error.message}` };
-        }
-    },
+    }
     
 }
 module.exports = resolvers;

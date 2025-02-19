@@ -64,7 +64,6 @@ const POSTschemma = buildSchema(`
 
     input DeleteInput {
         categoryId: String!
-        token: String!
         password: String!
     }
 
@@ -80,7 +79,7 @@ const POSTschemma = buildSchema(`
 
     type Mutation {
         categoryCreate(input: InputCategory!): Response
-        categoryDelete(input: DeleteInput!): Response
+        categoryDELETE(input: DeleteInput!): Response
     }
         `)
 

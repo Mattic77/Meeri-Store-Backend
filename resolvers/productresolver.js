@@ -6,9 +6,15 @@ const { Product, validationproduct, validationupdate } = require('../models/Prod
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const {Category} = require('../models/Category')
+const cloudinary = require ('cloudinary').v2
 
 dotenv.config();
-
+cloudinary.config({
+    cloud_name : "djbdanrbf",
+    secure : true,
+    api_key : process.env.CLOUD_API_KEY,
+    api_secret : process.env.CLOUD_SECRET_KEY
+})
 const resolvers = {
     productGET: async () => {
         try {
@@ -139,15 +145,41 @@ const resolvers = {
                     message: 'Invalid password',
                 };
             }
+    
+            // Find the product
+            const product = await Product.findById(args.input.productId);
+            if (!product) {
+                return {
+                    message: 'Product not found or already deleted',
+                };
+            }
+    
+            // Delete images from Cloudinary
+            const deleteImagePromises = product.images.map(async (imageUrl) => {
+                const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0];
+                console.log(`Deleting image with public_id: ${publicId}`);
+                try {
+                    const result = await cloudinary.uploader.destroy(publicId);
+                    console.log(`Deleted image: ${publicId}`, result);
+                    return result;
+                } catch (err) {
+                    console.error(`Error deleting image: ${publicId}`, err);
+                }
+            });
+    
+            await Promise.all(deleteImagePromises);
+    
+            // Delete the product from the database
             const deletedProduct = await Product.findByIdAndDelete(args.input.productId);
             if (!deletedProduct) {
                 return {
                     message: 'Product not found or already deleted',
                 };
             }
+    
             return {
                 username: user.username,
-                message: 'Product deleted successfully',
+                message: 'Product and images deleted successfully',
             };
         } catch (error) {
             console.error('Error in productDELETE:', error.message);
@@ -156,6 +188,8 @@ const resolvers = {
             };
         }
     },
+    
+    
     productUpdate: async (args, context) => {
         try {
             const user = await verifyTokenModerator(context.req);
