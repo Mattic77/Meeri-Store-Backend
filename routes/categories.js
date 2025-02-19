@@ -10,15 +10,35 @@ const auth_jwt = require('../helpers/jwt');
 const {GETschemma,POSTschemma} = require('../schemas/categoryschema');
 const resolvers = require('../resolvers/categoryresolver')
 const { createHandler } = require("graphql-http/lib/use/express");
+const cloudinary = require ('cloudinary').v2
+const { verifyTokenModerator } = require('../helpers/verify');
 
-
-router.post('/CreateCategory',auth_jwt(), upload.single('icon'), async (req, res) => {
+cloudinary.config({
+     cloud_name : "djbdanrbf",
+     secure : true,
+     api_key : process.env.CLOUD_API_KEY,
+     api_secret : process.env.CLOUD_SECRET_KEY
+})
+router.post('/CreateCategory',upload.single('icon'), async (req, res) => {
     // Create the icon URL by concatenating the server URL with the file path
-    const iconUrl = req.file ? `https://meeriproject.onrender.com/uploads/${req.file.filename}` : null;
 
+
+   // Upload the image to Cloudinary if a file is provided
+   let iconUrlcloudinary = null;
+   if (req.file) {
+       const result = await cloudinary.uploader.upload(req.file.path, {
+           folder: 'categories', // Optional: Organize your uploads into a folder
+       });
+       iconUrlcloudinary = result.secure_url; // Cloudinary's URL for the uploaded image
+   }
+
+    const user = await verifyTokenModerator(req);
+    if (!user) {
+        return res.status(401).send('Unauthorized');
+    }
     let category = new Category({
         name: req.body.name,
-        icon: iconUrl,  // Store the full path to the icon
+        icon: iconUrlcloudinary,  // Store the full path to the icon
         description: req.body.description,
         typestore: req.body.typestore,
     });
@@ -121,7 +141,11 @@ router.put('/Update/:id', upload.single('icon'), async (req, res) => {
  * @route /api/categories
  * @access public
  */
-router.delete('/delete/:id', auth_jwt(),async(req,res)=>{
+router.delete('/delete/:id', async(req,res)=>{
+    const user = await verifyTokenModerator(req);
+    if (!user) {
+        return res.status(401).send('Unauthorized');
+    }
     Category.findByIdAndDelete(req.params.id).then(category =>{
         if(category){
             res.status(200).json({ succes : true ,message : 'the category is deleted'})

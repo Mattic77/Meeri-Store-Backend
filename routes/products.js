@@ -8,12 +8,18 @@ const {GETschemma,POSTschemma} = require('../schemas/productschema');
 const resolvers = require('../resolvers/productresolver')
 const { createHandler } = require("graphql-http/lib/use/express");
 const { verifyTokenModerator } = require('../helpers/verify');
+const cloudinary = require ('cloudinary').v2
 
 
+cloudinary.config({
+    cloud_name : "djbdanrbf",
+    secure : true,
+    api_key : process.env.CLOUD_API_KEY,
+    api_secret : process.env.CLOUD_SECRET_KEY
+})
 router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
     try {
         
-        // Parse productdetail from JSON string to array of objects
         if (req.body.productdetail) {
             req.body.productdetail = JSON.parse(req.body.productdetail);
         }
@@ -31,8 +37,24 @@ router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
         }
 
         // Handle image uploads
-        const imageUrls = req.files ? req.files.map(file => `https://meeriproject.onrender.com/uploads/${file.filename}`) : [];
+        let imageUrls = [];
+        if (req.files && req.files.length > 0) {
+            const uploadPromises = req.files.map(file =>
+                cloudinary.uploader.upload(file.path, {
+                    folder: 'products', // Optional: Specify folder in Cloudinary
+                })
+            );
 
+            // Wait for all uploads to complete
+            const uploadResults = await Promise.all(uploadPromises);
+
+            // Extract secure URLs from the upload results
+            imageUrls = uploadResults.map(result => result.secure_url);
+
+            // Optional: Remove uploaded files from local storage
+            const fs = require('fs');
+            req.files.forEach(file => fs.unlinkSync(file.path));
+        }
         // Create a new product instance
         let product = new Product({
             name: value.name,
