@@ -135,6 +135,7 @@ const POSTschemma = buildSchema(`
     type Mutation {
         cartcreate(input: inputcart): Response
         DeleteProductfromcart(input:deleteproduct) :Response
+        Deletecartuser: Response
         incrementquantity(input : incrementinput):Response
         discrementquantity(input : incrementinput):Response
 

@@ -88,9 +88,6 @@ const resolvers = {
     },
     
     
-    
-    
-    
     cartGETByuser: async (args, context) => {
         try {
             const user = await GetidfromToken(context.req); // Get user from the token
@@ -309,6 +306,19 @@ const resolvers = {
             throw new Error("Failed to decrement product quantity.");
         }
     },
+    Deletecartuser: async (args,context )=>{
+        try {
+            const user = await GetidfromToken(context.req);
+            const cart = await Cart.findOneAndDelete({ userid: user._id });
+            if (!cart) {
+                throw new Error("Cart not found.");
+            }
+            return { message: "Cart deleted successfully." };
+        } catch (error) {
+            console.error("Error in Deletecartuser:", error.message);
+            throw new Error("Failed to delete cart.");
+        }
+    }
 
 
 }
