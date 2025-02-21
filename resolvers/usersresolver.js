@@ -128,14 +128,32 @@ const resolvers = {
         
         return { username: user.username, token: token, message:" User logged in  successfully "};
     },
-    userLogout: async()=>{
-        try{
-            
-
-        }catch(error){
-
+    userLoginAdmin :async (args)=>{
+        const {email , password} = args.input;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return { message: 'User not found' }
         }
-
+        // Check if the user has admin or moderator privileges
+        if (!user.isAdmin && !user.isModerator) { // Adjust logic for "and"
+            return { message: 'You are not allowed to sign in' };
+        }
+        const validPassword = await bcrypt.compare(password, user.passwordhash);
+        if (!validPassword) {
+            return res.status(400).json({ message: 'Invalid password' });
+        }
+    
+        const token = jwt.sign(
+            {
+                user_id: user._id,
+                isAdmin: user.isAdmin,
+                isModerator : user.isModerator
+            },
+            process.env.JWT_SECRET,
+            {expiresIn : "1w"}
+        );
+        
+        return { username: user.username, token: token, message:" User logged in  successfully "};
     },
     userChangePassword :async (args,context)=>{
         try {

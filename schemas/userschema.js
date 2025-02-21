@@ -93,6 +93,7 @@ const schema = buildSchema(`
     type Mutation {
       userRegister(input :registerinput) : response
       userLogin(input: logininput) : response
+      userLoginAdmin(input: logininput) : response
       userDELETE(input: deleteinput) : response
       userEdit(input:edituserinput) : responseedituser
       userChangePassword(input: passwordchancheinput): response
