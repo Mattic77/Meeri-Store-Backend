@@ -76,6 +76,7 @@ router.get('/delivery', (req, res) => {
       a_domicile: price.a_domicile,
       stop_desk: price.stop_desk,
       retour: price.retour,
+      commune : price.communes,
       address: address ? address.address : null // Include address if found, otherwise null
     };
   });
