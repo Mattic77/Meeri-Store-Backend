@@ -8,6 +8,8 @@ const { createHandler } = require("graphql-http/lib/use/express");
 const {GETschemma,POSTschemma} = require('../schemas/orderschema');
 const resolvers = require('../resolvers/orderresolver')
 const {verifyTokenModerator,GetidfromToken} = require('../helpers/verify')
+const fs = require('fs'); 
+const path = require('path'); 
 
 
 
@@ -50,6 +52,35 @@ router.get('/totalprice', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
+});
+
+const deliveryFilePath = path.join(__dirname, '../Data/delivery.json');
+
+// Read the JSON file
+let deliveryData;
+try {
+  const rawData = fs.readFileSync(deliveryFilePath);
+  deliveryData = JSON.parse(rawData);
+} catch (err) {
+  console.error('Error reading delivery.json:', err);
+  process.exit(1); 
+}
+
+router.get('/delivery', (req, res) => {
+  // Combine delivery_prices and delivery_addresses into a single array
+  const combinedData = deliveryData.delivery_prices.map(price => {
+    const address = deliveryData.delivery_addresses.find(addr => addr.code === price.code);
+    return {
+      code: price.code,
+      wilaya: price.wilaya,
+      a_domicile: price.a_domicile,
+      stop_desk: price.stop_desk,
+      retour: price.retour,
+      address: address ? address.address : null // Include address if found, otherwise null
+    };
+  });
+
+  res.json(combinedData);
 });
 
 
