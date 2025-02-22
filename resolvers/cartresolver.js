@@ -8,6 +8,7 @@ dotenv.config();
 
 
 const resolvers = {
+ 
     cartcreate: async (args, context) => {
         try {
             const user = await GetidfromToken(context.req);
@@ -21,11 +22,8 @@ const resolvers = {
     
             // Fetch the user's cart
             let userCart = await Cart.findOne({ userid: user._id })
-            .populate({
-                path: 'ProductList.Productid', 
-                model: 'Product', 
-            })
-            .populate('userid'); 
+                .populate('ProductList') // Populate product details
+                .populate('userid'); // Populate user details
     
             // Process each product in the input
             for (const product of ProductList) {
@@ -86,7 +84,6 @@ const resolvers = {
             throw new Error("Failed to create or update cart.");
         }
     },
-    
     
     cartGETByuser: async (args, context) => {
         try {
