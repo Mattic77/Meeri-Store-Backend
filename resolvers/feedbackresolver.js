@@ -7,6 +7,27 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const resolvers = {
+    feedbackGET: async(args,context)=>{
+        try {
+            const feedbackList = await Feedback.find() 
+            .populate({
+                path: 'product',
+                model: 'Product',
+                select: '_id name description Price category images', // Only retrieve relevant fields
+                    }).populate({
+                        path: 'userfeedback.user', 
+                        model: 'User', 
+                        select: 'username', 
+                    });
+                    if(!feedbackList){
+                        return { message: 'No feedbacks found' };
+                    }
+                    return feedbackList;
+        }catch(error){
+            console.error(error);
+            return { message: 'Error Getiing feedbacks' };
+        }
+    },
     ADDfeedback: async (args, context) => {
         try {
             const user = await GetidfromToken(context.req); // Validate the user from token

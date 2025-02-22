@@ -46,7 +46,8 @@ const GETschemma = buildSchema(`
     }
 
     type Query {
-        feedbackproductGET(_id : String ): feedback
+            feedbackGET:[feedback]
+            feedbackproductGET(_id : String ): feedback
     }
 `);
 
