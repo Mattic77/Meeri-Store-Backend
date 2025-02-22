@@ -38,7 +38,6 @@ const resolvers = {
           const orders = await Order.find({})
           .populate('user')
           .populate('orderitems.product');
-      console.log(JSON.stringify(orders, null, 2));
         
 
                   
