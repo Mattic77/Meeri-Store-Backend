@@ -13,12 +13,12 @@ const productDetailSchema = new mongoose.Schema({
 
 const Productschema = new mongoose.Schema({
     name: { type: String, required: true },
-    description: { type: String, required: true },
-    richDescription: { type: String, trim: true, minlength: 3, maxlength: 200, required: true },
+    description: { type: String }, // Remove required: true
+    richDescription: { type: String, trim: true, minlength: 3, maxlength: 200 }, // Remove required: true
     images: [{ type: String }],
     brand: { type: String, default: '' },
-    Price: { type: Number, required: true },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    Price: { type: Number }, // Remove required: true
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' }, // Remove required: true
     CountINStock: { type: Number, default: 0, min: 0, max: 255 },
     rating: { type: Number, default: 0 },
     IsFeatured: { type: Boolean, default: false },
