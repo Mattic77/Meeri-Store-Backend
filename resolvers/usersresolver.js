@@ -184,7 +184,7 @@ const resolvers = {
             return { message: 'An error occurred while processing your request' };
         }
     },
-userEdit: async (args, context) => {
+    userEdit: async (args, context) => {
   try {
     const userID = await GetidfromToken(context.req);
     console.log('Extracted User ID:', userID);

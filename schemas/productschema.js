@@ -1,4 +1,24 @@
-const { buildSchema } = require("graphql");
+const { buildSchema } = require('graphql');
+
+const { GraphQLScalarType, Kind } = require('graphql');
+const DateScalar = new GraphQLScalarType({
+  name: 'Date',
+  description: 'Custom scalar type for Date',
+  parseValue(value) {
+    return new Date(value);
+  },
+  serialize(value) {
+    return value.getTime(); 
+  },
+  parseLiteral(ast) {
+    if (ast.kind === Kind.INT) {
+      return new Date(parseInt(ast.value, 10));
+    }
+    return null;
+  },
+});
+
+
 const GETschemma = buildSchema(`
     type Productsize{
     size : String
@@ -11,6 +31,8 @@ const GETschemma = buildSchema(`
     sizes: [Productsize]
 
     }
+      scalar Date
+
     type Product{
         _id :String
         name: String
@@ -24,6 +46,8 @@ const GETschemma = buildSchema(`
         rating: Int
         IsFeatured: Boolean
         productdetail: [Productdetail]
+        createdAt: Date
+        updatedAt: Date
     }
     enum Typestore {
         accessoire
