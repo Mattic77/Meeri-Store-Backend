@@ -78,9 +78,18 @@ router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
         res.status(500).send('Server Error: ' + err.message);
     }
 });
+const fs = require('fs');
+const { promisify } = require('util');
+const unlinkAsync = promisify(fs.unlink);
+
 router.put('/editProduct/:id', upload.array('images', 10), async (req, res) => {
     try {
-        const userconfirme = await verifyTokenModerator(req);
+        // Verify the token and get the user
+        const user = await verifyTokenModerator(req);
+        if (!user) {
+            return res.status(401).send('Unauthorized');
+        }
+
         const productId = req.params.id;
 
         // Parse productdetail if it exists
@@ -94,20 +103,33 @@ router.put('/editProduct/:id', upload.array('images', 10), async (req, res) => {
             return res.status(400).send(error.details[0].message);
         }
 
-        // Verify the token and get the user
-        const user = await verifyTokenModerator(req);
-        if (!user) {
-            return res.status(401).send('Unauthorized');
-        }
-
         // Find the existing product
         let product = await Product.findById(productId);
         if (!product) {
             return res.status(404).send('Product not found');
         }
 
-        // Handle image uploads
-        let imageUrls = product.images || [];
+        // Process updated images
+        if (value.images !== undefined) {
+            // Retain valid URLs and remove unwanted links
+            const validUrls = value.images.filter(url =>
+                /^https?:\/\/res\.cloudinary\.com\/.*$/.test(url)
+            );
+
+            // Delete old images not in the new valid list
+            const imagesToDelete = product.images.filter(img => !validUrls.includes(img));
+            if (imagesToDelete.length > 0) {
+                const deletePromises = imagesToDelete.map(imageUrl =>
+                    cloudinary.uploader.destroy(imageUrl.split('/').pop().split('.')[0])
+                );
+                await Promise.all(deletePromises);
+            }
+
+            // Update product images with valid URLs
+            product.images = validUrls;
+        }
+
+        // Handle new image uploads
         if (req.files && req.files.length > 0) {
             const uploadPromises = req.files.map(file =>
                 cloudinary.uploader.upload(file.path, {
@@ -120,25 +142,21 @@ router.put('/editProduct/:id', upload.array('images', 10), async (req, res) => {
 
             // Extract secure URLs from the upload results
             const newImageUrls = uploadResults.map(result => result.secure_url);
-            imageUrls = [...imageUrls, ...newImageUrls];
+            product.images = product.images.concat(newImageUrls);
 
-            // Optional: Remove uploaded files from local storage
-            const fs = require('fs');
-            req.files.forEach(file => fs.unlinkSync(file.path));
+            // Remove uploaded files from local storage
+            await Promise.all(req.files.map(file => unlinkAsync(file.path)));
         }
 
-        if (value.name !== undefined) product.name = value.name;
-        if (value.description !== undefined) product.description = value.description;
-        if (value.richDescription !== undefined) product.richDescription = value.richDescription;
-        if (value.brand !== undefined) product.brand = value.brand;
-        if (value.Price !== undefined) product.Price = value.Price;
-        if (value.category !== undefined) product.category = value.category;
-        if (value.CountINStock !== undefined) product.CountINStock = value.CountINStock;
-        if (value.rating !== undefined) product.rating = value.rating;
-        if (value.IsFeatured !== undefined) product.IsFeatured = value.IsFeatured;
-        if (value.productdetail !== undefined) product.productdetail = value.productdetail;
-        product.images = imageUrls; 
+        // Update other product fields
+        const fieldsToUpdate = ['name', 'description', 'richDescription', 'brand', 'Price', 'category', 'CountINStock', 'rating', 'IsFeatured', 'productdetail'];
+        fieldsToUpdate.forEach(field => {
+            if (value[field] !== undefined) {
+                product[field] = value[field];
+            }
+        });
 
+        // Save the updated product
         product = await product.save();
         res.status(200).send(product);
     } catch (err) {
@@ -146,6 +164,7 @@ router.put('/editProduct/:id', upload.array('images', 10), async (req, res) => {
         res.status(500).send('Server Error: ' + err.message);
     }
 });
+
 
 /**
  * @desc GET Product 
