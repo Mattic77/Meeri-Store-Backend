@@ -238,7 +238,7 @@ const resolvers = {
             return { product: [], message: "Invalid category ID" };
         }
     
-        const products = await Product.find({ category: args._id });
+        const products = await Product.find({ category: args._id }).populate('category');
         if (products.length === 0) {
             return { product: [], message: "No products found for this category" };
         }
