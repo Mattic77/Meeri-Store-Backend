@@ -120,21 +120,41 @@ router.get('/Get/:id',async (req,res)=>{
  * @access public
  */
 router.put('/Update/:id', upload.single('icon'), async (req, res) => {
-    // If a new icon is uploaded, generate the new icon URL
-    const iconUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : req.body.icon;
-
-    let category = await Category.findByIdAndUpdate(req.params.id, {
-        name: req.body.name,
-        icon: iconUrl,  // Update the icon with the new URL or keep the existing one
-        typestore: req.body.typestore
-    }, { new: true });
-
-    if (!category)
+    try {
+      const { id } = req.params;
+      const { name, typestore, existingIcon } = req.body;
+  
+      let iconUrl = existingIcon;
+  
+     
+      if (req.file) {
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'categories', 
+        });
+        iconUrl = result.secure_url; 
+      }
+  
+      // Update the category in the database
+      const updatedCategory = await Category.findByIdAndUpdate(
+        id,
+        {
+          name,
+          icon: iconUrl,
+          typestore,
+        },
+        { new: true } // Return the updated document
+      );
+  
+      if (!updatedCategory) {
         return res.status(404).send('The category cannot be updated');
-
-    res.send(category);
-});
-
+      }
+  
+      res.send(updatedCategory);
+    } catch (error) {
+      console.error('Error updating category:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  });
 /**
  * @desc DELETE category
  * @method DELETE
