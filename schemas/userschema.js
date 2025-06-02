@@ -1,7 +1,24 @@
 const { buildSchema } = require("graphql");
-
+const { GraphQLScalarType, Kind } = require('graphql');
+const DateScalar = new GraphQLScalarType({
+  name: 'Date',
+  description: 'Custom scalar type for Date',
+  parseValue(value) {
+    return new Date(value);
+  },
+  serialize(value) {
+    return value.getTime(); 
+  },
+  parseLiteral(ast) {
+    if (ast.kind === Kind.INT) {
+      return new Date(parseInt(ast.value, 10));
+    }
+    return null;
+  },
+});
 
 const schema = buildSchema(`
+  scalar Date
    type User {
     _id :String
     firstname : String
@@ -13,6 +30,7 @@ const schema = buildSchema(`
     commune : String
     code_postal : String
     adresse : String
+    createdAt :Date
 
   }
   
