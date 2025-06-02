@@ -33,8 +33,10 @@ const incrementOrderId = async () => {
   };
   
 const resolvers = {
-    orderGET: async () => {
+    orderGET: async (args,context) => {
         try {
+          const user = await verifyTokenModerator(context.req);
+  
           const orders = await Order.find({})
           .populate('user')
           .populate('orderitems.product');

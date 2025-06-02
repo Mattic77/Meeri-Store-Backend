@@ -33,9 +33,8 @@ router.get('/countordersconfirm', async (req, res) => {
 });
 router.get('/totalprice', async (req, res) => {
     try {
-        const user = await verifyTokenModerator(req); // Verify if the user is authorized
+        const user = await verifyTokenModerator(req);
 
-        // Aggregate total price of all orders
         const totalPrice = await Order.aggregate([
             {
                 $group: {
@@ -77,7 +76,7 @@ router.get('/delivery', (req, res) => {
       stop_desk: price.stop_desk,
       retour: price.retour,
       commune : price.communes,
-      address: address ? address.address : null // Include address if found, otherwise null
+      address: address ? address.address : null 
     };
   });
 
@@ -123,6 +122,8 @@ router.use(
  * @access public
  */
 router.get('/GetALLOrders', async (req, res) => {
+    const user = await  verifyTokenModerator(req)
+
     const Orderlist = await Order.find().populate('user','username -_id').populate('orderitems','product quantity -_id')
     if (!Orderlist) {
         return res.status(500).json({ success: false });
