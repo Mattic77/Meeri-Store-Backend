@@ -200,21 +200,53 @@ router.post('/Createorder', async (req, res) => {
 });
 router.put('/statuschange/:id', async (req, res) => {
     try {
+        // 1. Verify moderator authentication
         const user = await verifyTokenModerator(req);
+        if (!user) {
+            return res.status(403).json({ message: 'Unauthorized access' });
+        }
+
+        // 2. Validate status value
+        const validStatuses = [
+            'en cours de confirmation',
+            'confirmé', 
+            'en livraison',
+            'livré',
+            'annulé'
+        ];
         
+        if (!validStatuses.includes(req.body.status)) {
+            return res.status(400).json({ message: 'Invalid status value' });
+        }
+
+        // 3. Find and update the order
+        const order = await Order.findById(req.params.id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        const UpdatedOrder = await Order.findByIdAndUpdate(
+        const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
-            { status: req.body.status },
+            { 
+                status: req.body.status,
+                $push: { statusHistory: { status: req.body.status, changedAt: new Date() } }
+            },
             { new: true }
         );
 
-        res.json(UpdatedOrder);
+        // 4. Return the updated order
+        res.json({
+            success: true,
+            order: updatedOrder
+        });
+
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Status update error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error',
+            error: error.message 
+        });
     }
 });
 
