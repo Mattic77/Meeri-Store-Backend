@@ -198,17 +198,16 @@ router.post('/Createorder', async (req, res) => {
         res.status(500).send('An error occurred while creating the order.');
     }
 });
-router.put('/statuschange/:orderid', async (req, res) => {
+router.put('/statuschange/:id', async (req, res) => {
     try {
         const user = await verifyTokenModerator(req);
-        const order = await Order.findOne({ idorder: req.params.orderid });
         
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
         const UpdatedOrder = await Order.findByIdAndUpdate(
-            order._id,
+            req.params.id,
             { status: req.body.status },
             { new: true }
         );
