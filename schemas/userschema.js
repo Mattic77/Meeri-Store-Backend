@@ -33,9 +33,24 @@ const schema = buildSchema(`
     createdAt :Date
 
   }
+       type UserAdmin {
+    _id :String
+    firstname : String
+    lastname : String
+    username: String
+    email: String
+    phonenumber : String
+    wilaya : String
+    commune : String
+    code_postal : String
+    adresse : String
+    createdAt :Date
+    isModerator :Boolean
+
+  }
   
     type Query {
-      usersGET: [User] 
+      usersGET: [UserAdmin] 
       userGETById :User
       userDELETE(_id:String) : User
 

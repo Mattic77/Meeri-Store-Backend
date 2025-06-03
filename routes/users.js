@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const { createHandler } = require("graphql-http/lib/use/express");
 const {schema,Authschema} = require('../schemas/userschema');
 const resolvers = require('../resolvers/usersresolver');
-const {verifyTokenModerator,GetidfromToken} = require('../helpers/verify')
+const {verifyTokenModerator,GetidfromToken,verifyTokenAdmin} = require('../helpers/verify')
 
 
 
@@ -74,6 +74,8 @@ router.get('/countusers', async (req, res) => {
 
 
 router.put('/Update/:id', async (req, res) => {
+        const user = await  verifyTokenAdmin(req)
+    
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(404).json({ success: false, message: 'Invalid user ID' });
     }
@@ -82,21 +84,16 @@ router.put('/Update/:id', async (req, res) => {
         {
             email: req.body.email,
             username: req.body.username,
-            passwordhash: req.body.passwordhash,
-            isAdmin: req.body.isAdmin,
-            phonenumber : req.body.phonenumber,
-            wilaya : req.body.wilaya,
-            commune : req.body.commune,
-            code_postal : req.body.code_postal,
-            adresse : req.body.adresse,
+            
+            isModerator: req.body.isModerator,
         },
         { new: true }
-    );
+    ).select('username email isModerator updatedAt'); 
 
     if (!updateduser) {
         return res.status(404).send('The user cannot be updated');
     }
-    res.send(updateduser);
+    res.send({updateduser});
 });
 
 /**
