@@ -138,64 +138,78 @@ router.get('/GetALLOrders', async (req, res) => {
  * @route /api/orders
  * @access public
  */
+
 router.post('/Createorder', async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
     try {
-        // Create order items and return their ids
-        const orderitemsids = await Promise.all(req.body.orderitems.map(async item => {
-            // Convert quantity to Number
-            const quantity = Number(item.quantity); // Convert to number
+        // Validate products and quantities first
+        const productUpdates = [];
+        const orderItems = [];
+        let totalPrice = 0;
+        let totalQuantity = 0;
 
-            let newOrderitem = new OrderItem({
-                quantity: quantity,
-                product: item.product,
+        // Phase 1: Validation
+        for (const item of req.body.orderitems) {
+            const product = await Product.findById(item.product).session(session);
+            if (!product) {
+                await session.abortTransaction();
+                return res.status(400).send(`Product ${item.product} not found`);
+            }
+
+            if (product.stock < item.quantity) {
+                await session.abortTransaction();
+                return res.status(400).send(`Insufficient stock for product ${product.name}`);
+            }
+
+            productUpdates.push({
+                updateOne: {
+                    filter: { _id: product._id },
+                    update: { $inc: { stock: -item.quantity } }
+                }
             });
-            newOrderitem = await newOrderitem.save();
-            return newOrderitem._id;
-        }));
 
-        // Fetch order items to calculate total quantity and price
-        const orderitems = await OrderItem.find({ _id: { $in: orderitemsids } });
-        if (!orderitems.length) {
-            return res.status(400).send('No valid order items created.');
+            const itemPrice = product.Price * item.quantity;
+            totalPrice += itemPrice;
+            totalQuantity += item.quantity;
+
+            orderItems.push({
+                quantity: item.quantity,
+                product: product._id,
+                price: product.Price
+            });
         }
 
-        // Fetch product details to calculate total price
-        const productIds = orderitems.map(item => item.product);
-        const products = await Product.find({ _id: { $in: productIds } });
+        // Phase 2: Execute all updates atomically
+        await Product.bulkWrite(productUpdates, { session });
 
-        // Calculate total quantity and total price
-        const totalQuantity = orderitems.reduce((total, item) => total + item.quantity, 0);
-        const totalPrice = orderitems.reduce((total, item) => {
-            const product = products.find(p => p._id.equals(item.product));
-            if (product && product.Price) {
-                return total + (product.Price * item.quantity); // Make sure product.Price is a number
-            }
-            return total; // If product not found, skip
-        }, 0);
+        // Create order items
+        const createdItems = await OrderItem.insertMany(orderItems, { session });
 
-        // Create the order with total quantity and price
-        let order = new Order({
-            orderitems: orderitemsids,
+        // Create the order
+        const order = new Order({
+            orderitems: createdItems.map(item => item._id),
             adress: req.body.adress,
             city: req.body.city,
             postalcode: req.body.postalcode,
             phonenumber: req.body.phonenumber,
-            status: req.body.status,
+            status: 'pending', // Default status
             totalprice: totalPrice,
             quantityOrder: totalQuantity,
             user: req.body.user,
         });
 
-        order = await order.save();
+        await order.save({ session });
+        await session.commitTransaction();
 
-        if (!order) {
-            return res.status(404).send('The order cannot be created');
-        }
-
-        res.send(order);
+        res.status(201).json(order);
     } catch (error) {
-        console.error('Error creating order:', error);
-        res.status(500).send('An error occurred while creating the order.');
+        await session.abortTransaction();
+        console.error('Order creation failed:', error);
+        res.status(500).send('Order creation failed');
+    } finally {
+        session.endSession();
     }
 });
 router.put('/statuschange/:id', async (req, res) => {
