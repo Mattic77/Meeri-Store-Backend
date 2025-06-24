@@ -213,10 +213,14 @@ router.post('/Createorder', async (req, res) => {
     }
 });
 router.put('/statuschange/:id', async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
     try {
         // 1. Verify moderator authentication
         const user = await verifyTokenModerator(req);
         if (!user) {
+            await session.abortTransaction();
             return res.status(403).json({ message: 'Unauthorized access' });
         }
 
@@ -230,37 +234,77 @@ router.put('/statuschange/:id', async (req, res) => {
         ];
         
         if (!validStatuses.includes(req.body.status)) {
+            await session.abortTransaction();
             return res.status(400).json({ message: 'Invalid status value' });
         }
 
-        // 3. Find and update the order
-        const order = await Order.findById(req.params.id);
+        // 3. Find the order
+        const order = await Order.findById(req.params.id).session(session);
         if (!order) {
+            await session.abortTransaction();
             return res.status(404).json({ message: 'Order not found' });
         }
 
+        // Skip if already in this status
+        if (order.status === req.body.status) {
+            await session.abortTransaction();
+            return res.json({
+                success: true,
+                message: 'Order already has this status',
+                order
+            });
+        }
+
+        // 4. If status is being changed to "annulé", restore product quantities
+        if (req.body.status === "annulé") {
+            const orderItems = order.orderitems;
+            
+            for (const item of orderItems) {
+                const product = await Product.findById(item.product).session(session);
+                
+                if (product) {
+                    for (const ProductD of product.productdetail) {
+                        if (ProductD.color === item.color) {
+                            for (const sizeT of ProductD.sizes) {
+                                if (sizeT.size === item.size) {
+                                    sizeT.stock += item.quantity;
+                                }
+                            }
+                        }
+                    }
+                    await product.save({ session });
+                }
+            }
+        }
+
+        // 5. Update the order status
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
             { 
                 status: req.body.status,
                 $push: { statusHistory: { status: req.body.status, changedAt: new Date() } }
             },
-            { new: true }
+            { new: true, session }
         );
 
-        // 4. Return the updated order
+        await session.commitTransaction();
+        
+        // 6. Return the updated order
         res.json({
             success: true,
             order: updatedOrder
         });
 
     } catch (error) {
+        await session.abortTransaction();
         console.error('Status update error:', error);
         res.status(500).json({ 
             success: false,
             message: 'Internal server error',
             error: error.message 
         });
+    } finally {
+        session.endSession();
     }
 });
 

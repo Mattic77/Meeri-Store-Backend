@@ -87,7 +87,6 @@ const resolvers = {
                 model: 'User', 
                 select: 'username', 
             });
-            console.log(feedback)
             return  feedback ;
         } catch (error) {
             console.error('Error in fetching feedback', error.message);

@@ -48,130 +48,225 @@ const resolvers = {
           throw new Error('Error fetching orders: ' + error.message);
         }
       },
-      createOrder: async (args, context) => {
-        try {
-          const userT = await GetidfromToken(context.req);
-      
-          const orderitems = args.input.orderitems;
-      
-          // Fetch product details to calculate total price and quantity
-          const productIds = orderitems.map(item => item.product);
-          const products = await Product.find({ _id: { $in: productIds } });
-      
-          // Calculate total quantity and total price
-          let totalQuantity = 0;
-          let totalPrice = 0;
-      
-          const orderItemsData = orderitems.map(item => {
-            const quantity = Number(item.quantity); // Convert to number
-            totalQuantity += quantity;
-      
+     createOrder: async (args, context) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+        const userT = await GetidfromToken(context.req);
+        const orderitems = args.input.orderitems;
+
+        // 1. Fetch products with session for transaction
+        const productIds = orderitems.map(item => item.product);
+        const products = await Product.find({ _id: { $in: productIds } }).session(session);
+
+        // 2. Calculate totals and prepare order items
+        let totalQuantity = 0;
+        let totalPrice = 0;
+        const orderItemsData = [];
+
+        // 3. First pass: validate stock availability
+        for (const item of orderitems) {
+            const quantity = Number(item.quantity);
             const product = products.find(p => p._id.equals(item.product));
-            const price = product ? product.Price : 0;
-            totalPrice += price * quantity;
-      
-            return {
-              quantity,
-              product: item.product,
-              color: item.color, // Add color from input
-              size: item.size, 
-              priceproduct: price * quantity, // Calculate priceproduct
-            };
-          });
-      
-          const orderId = await incrementOrderId();
-          const order = new Order({
+            
+            if (!product) {
+                throw new Error(`Product ${item.product} not found`);
+            }
+
+            // Find matching color and size
+            const productDetail = product.productdetail.find(
+                pd => pd.color === item.color
+            );
+            
+            if (!productDetail) {
+                throw new Error(`Color ${item.color} not available for product ${product.name}`);
+            }
+
+            const sizeObj = productDetail.sizes.find(
+                s => s.size === item.size
+            );
+            
+            if (!sizeObj) {
+                throw new Error(`Size ${item.size} not available for product ${product.name}`);
+            }
+
+            if (sizeObj.stock < quantity) {
+                throw new Error(`Insufficient stock for ${product.name} (${item.color}, ${item.size})`);
+            }
+
+            // Calculate price
+            const price = product.Price * quantity;
+            totalPrice += price;
+            totalQuantity += quantity;
+
+            orderItemsData.push({
+                quantity,
+                product: item.product,
+                color: item.color,
+                size: item.size,
+                priceproduct: price
+            });
+        }
+
+        // 4. Second pass: update stock
+        for (const item of orderitems) {
+            const product = products.find(p => p._id.equals(item.product));
+            const quantity = Number(item.quantity);
+
+            // Find and update the specific size stock
+            const productDetail = product.productdetail.find(
+                pd => pd.color === item.color
+            );
+            const sizeObj = productDetail.sizes.find(
+                s => s.size === item.size
+            );
+            
+            sizeObj.stock -= quantity;
+            await product.save({ session });
+        }
+
+        // 5. Create the order
+        const orderId = await incrementOrderId();
+        const order = new Order({
             firstname: userT.firstname || args.input.firstname,
             lastname: userT.lastname || args.input.lastname,
-            email : userT.email ||args.input.email,
+            email: userT.email || args.input.email,
             orderitems: orderItemsData,
             adress: args.input.adress || userT.adress,
-            wilaya : args.input.wilaya || userT.wilaya,
+            wilaya: args.input.wilaya || userT.wilaya,
             commune: args.input.commune || userT.commune,
             phonenumber: args.input.phonenumber || userT.phonenumber,
             status: 'en cours de confirmation',
-            totalprice: totalPrice + args.input.livprice,
+            totalprice: totalPrice + (args.input.livprice || 0),
             quantityOrder: totalQuantity,
             user: userT._id,
             idorder: orderId,
-          });
-      
-          // Save the order
-          const savedOrder = await order.save();
-      
-          if (!savedOrder) {
-            return {
-              message: 'The order cannot be created',
-            };
-          }
-      
-          const userF = await User.findById(userT._id);
-      
-          // Construct orderDetails using products data
-          const orderDetails = orderitems.map((item) => {
+        });
+
+        const savedOrder = await order.save({ session });
+
+        // 6. Commit transaction
+        await session.commitTransaction();
+
+        // 7. Send email (outside transaction)
+        const userF = await User.findById(userT._id);
+        const orderDetails = orderitems.map((item) => {
             const product = products.find(p => p._id.equals(item.product));
             return {
-              productName: product ? product.name : 'Unknown Product',
-              quantity: item.quantity,
-              price: product ? product.Price : 0,
-              color: item.color, // Include color in order details
-              size: item.size, // Include size in order details
+                productName: product ? product.name : 'Unknown Product',
+                quantity: item.quantity,
+                price: product ? product.Price : 0,
+                color: item.color,
+                size: item.size,
             };
-          });
-      
-          // Send order confirmation email
-          await sendOrderEmail({
+        });
+
+        await sendOrderEmail({
             idorder: orderId,
             recipient: userF.email,
             name: userF.username,
-            orderDetails, // Pass the orderDetails array
+            orderDetails,
             totalPrice,
-          });
-      
-          return {
+        });
+
+        return {
             user: userF,
             orderitems: orderItemsData,
             order: savedOrder,
             message: 'Order saved successfully',
-          };
-        } catch (error) {
-          console.error('Error creating order:', error);
-          throw new Error('An error occurred while creating the order.');
-        }
-      },
-    createOrderAnonym : async (args, context) => {
-        try {
-          
-          const orderitems = args.input.orderitems;
-      
-          // Fetch product details to calculate total price and quantity
-          const productIds = orderitems.map(item => item.product);
-          const products = await Product.find({ _id: { $in: productIds } });
-      
-          // Calculate total quantity and total price
-          let totalQuantity = 0;
-          let totalPrice = 0;
-      
-          const orderItemsData = orderitems.map(item => {
-            const quantity = Number(item.quantity); // Convert to number
-            totalQuantity += quantity;
-      
+        };
+
+    } catch (error) {
+        await session.abortTransaction();
+        console.error('Error creating order:', error);
+        throw new Error(error.message || 'An error occurred while creating the order.');
+    } finally {
+        session.endSession();
+    }
+},
+   createOrderAnonym: async (args, context) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+        const orderitems = args.input.orderitems;
+
+        // 1. Fetch products with session for transaction
+        const productIds = orderitems.map(item => item.product);
+        const products = await Product.find({ _id: { $in: productIds } }).session(session);
+
+        // 2. Calculate totals and prepare order items
+        let totalQuantity = 0;
+        let totalPrice = 0;
+        const orderItemsData = [];
+
+        // 3. First pass: validate stock availability
+        for (const item of orderitems) {
+            const quantity = Number(item.quantity);
             const product = products.find(p => p._id.equals(item.product));
-            const price = product ? product.Price : 0;
-            totalPrice += price * quantity;
-      
-            return {
-              quantity,
-              product: item.product,
-              color: item.color, 
-              size: item.size, 
-            };
-          });
-      
-          const orderId = await incrementOrderId();
-          const order = new Order({
-            firstname : args.input.firstname,
-            lastname : args.input.lastname,
+            
+            if (!product) {
+                throw new Error(`Product ${item.product} not found`);
+            }
+
+            // Find matching color and size
+            const productDetail = product.productdetail.find(
+                pd => pd.color === item.color
+            );
+            
+            if (!productDetail) {
+                throw new Error(`Color ${item.color} not available for product ${product.name}`);
+            }
+
+            const sizeObj = productDetail.sizes.find(
+                s => s.size === item.size
+            );
+            
+            if (!sizeObj) {
+                throw new Error(`Size ${item.size} not available for product ${product.name}`);
+            }
+
+            if (sizeObj.stock < quantity) {
+                throw new Error(`Insufficient stock for ${product.name} (${item.color}, ${item.size})`);
+            }
+
+            // Calculate price
+            const price = product.Price * quantity;
+            totalPrice += price;
+            totalQuantity += quantity;
+
+            orderItemsData.push({
+                quantity,
+                product: item.product,
+                color: item.color,
+                size: item.size,
+                priceproduct: price
+            });
+        }
+
+        // 4. Second pass: update stock
+        for (const item of orderitems) {
+            const product = products.find(p => p._id.equals(item.product));
+            const quantity = Number(item.quantity);
+
+            // Find and update the specific size stock
+            const productDetail = product.productdetail.find(
+                pd => pd.color === item.color
+            );
+            const sizeObj = productDetail.sizes.find(
+                s => s.size === item.size
+            );
+            
+            sizeObj.stock -= quantity;
+            await product.save({ session });
+        }
+
+        // 5. Create the order
+        const orderId = await incrementOrderId();
+        const order = new Order({
+            firstname: args.input.firstname,
+            lastname: args.input.lastname,
             email: args.input.email,
             orderitems: orderItemsData,
             adress: args.input.adress,
@@ -179,31 +274,30 @@ const resolvers = {
             commune: args.input.commune,
             phonenumber: args.input.phonenumber,
             status: 'en cours de confirmation',
-            totalprice: totalPrice+args.input.livprice,
+            totalprice: totalPrice + (args.input.livprice || 0),
             quantityOrder: totalQuantity,
             idorder: orderId,
-          });
-      
-          // Save the order
-          const savedOrder = await order.save();
-      
-          if (!savedOrder) {
-            return {
-              message: 'The order cannot be created',
-            };
-          }
-      
+        });
 
-      
-          return { 
-             orderitems : orderItemsData,
-             order: savedOrder,
-             message: 'Order saved successfully' };
-        } catch (error) {
-          console.error('Error creating order:', error);
-          throw new Error('An error occurred while creating the order.');
-        }
-      },
+        const savedOrder = await order.save({ session });
+
+        // 6. Commit transaction
+        await session.commitTransaction();
+
+        return {
+            orderitems: orderItemsData,
+            order: savedOrder,
+            message: 'Order saved successfully',
+        };
+
+    } catch (error) {
+        await session.abortTransaction();
+        console.error('Error creating anonymous order:', error);
+        throw new Error(error.message || 'An error occurred while creating the order.');
+    } finally {
+        session.endSession();
+    }
+},
       
       
       
@@ -303,7 +397,6 @@ const resolvers = {
         try{
         const user = await GetidfromToken(context.req)
         const order = await Order.find({user: user._id}).populate('user', 'username').populate('orderitems.product');
-        console.log(order)
         if(!order){
             return{
                 message : 'No order found'

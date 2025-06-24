@@ -187,7 +187,6 @@ const resolvers = {
     userEdit: async (args, context) => {
   try {
     const userID = await GetidfromToken(context.req);
-    console.log('Extracted User ID:', userID);
 
     const user = await User.findByIdAndUpdate(
       userID._id, 
