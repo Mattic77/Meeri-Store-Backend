@@ -72,7 +72,10 @@ router.get('/countusers', async (req, res) => {
     }
 });
 
+router.put('Moderator/:id',async(req,res)=>{
+    
 
+})
 router.put('/Update/:id', async (req, res) => {
         const user = await  verifyTokenAdmin(req)
     

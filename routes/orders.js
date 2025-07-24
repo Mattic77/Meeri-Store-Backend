@@ -212,7 +212,7 @@ router.post('/Createorder', async (req, res) => {
         session.endSession();
     }
 });
-router.put('/statuschange/:id', async (req, res) => {
+router.put('/statuschange/:idorder', async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     
@@ -306,6 +306,19 @@ router.put('/statuschange/:id', async (req, res) => {
     } finally {
         session.endSession();
     }
+});
+router.get('/searchorderbyid/:id', async (req, res) => {
+  try {
+    const order = await Order.findOne({ idorder: req.params.id });
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found", order: null });
+    }
+
+    res.json({ message: "Order found", order });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 });
 
     module.exports = router;
