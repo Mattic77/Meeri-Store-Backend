@@ -295,7 +295,7 @@ const resolvers = {
         await sendemailrestpass({ recipients: user.email, message ,name :user.username,resetLink});
     
         return { message: "Password reset link sent to your email." ,
-            succes : true
+            success : true
         };
     },
 
