@@ -290,7 +290,7 @@ const resolvers = {
         await user.save();
     
         // Send the reset email
-        const resetLink = `https://meeristore.com/reset-password?token=${resetToken}`;
+        const resetLink = `http://localhost:3000/resetPassword?token=${resetToken}`;
         const message = `Hi ${user.firstname},\n\nYou requested to reset your password. Click the link below to reset it:\n\n${resetLink}\n\nIf you didn't request this, please ignore this email.`;
         await sendemailrestpass({ recipients: user.email, message ,name :user.username,resetLink});
     
