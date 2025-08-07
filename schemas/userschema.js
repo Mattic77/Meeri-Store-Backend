@@ -124,6 +124,7 @@ const schema = buildSchema(`
     username : String
     token: String
     message: String
+    succes : Boolean
     }
     type Mutation {
       userRegister(input :registerinput) : response
