@@ -70,6 +70,15 @@ const userSchema = new mongoose.Schema({
         minlength: 3,
         maxlength: 200,
     },
+    resetToken :{
+        type: String,
+        minlength: 3,
+        maxlength: 200,
+    },
+    resetTokenExpiration :{
+        type: Date,
+       
+    }
 }, {
     timestamps: true
 });

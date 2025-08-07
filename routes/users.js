@@ -33,8 +33,8 @@ router.use(
 }
   );
 /**
- * @desc get  all users 
- * @method get
+ * @desc  crud data 
+ * @method post
  * @route /
  * @access public
  */

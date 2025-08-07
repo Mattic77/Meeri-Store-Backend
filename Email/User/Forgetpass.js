@@ -10,25 +10,42 @@ const transport = nodemailer.createTransport({
     },
 });
 
-const sendemailrestpass = async ({ recipients, message ,name,resetLink :resetLink}) => {
-    const resetEmailHtml = (name, resetLink) => `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h1 style="color: #007bff;">Password Reset Request</h1>
-        <p>Hi ${name},</p>
-        <p>You requested to reset your password. Click the button below to reset it:</p>
-        <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
-        <p>If you didn't request this, you can ignore this email.</p>
-        <p>Thank you,<br>The Meeristore Team</p>
-    </div>
-`;
+const sendemailrestpass = async ({ recipients, message, name, resetLink }) => {
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h1 style="color: #007bff;">Password Reset Request</h1>
+            <p>Hi ${name},</p>
+            <p>You requested to reset your password. Click the button below to reset it:</p>
+            <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+            <p>If you didn't request this, you can ignore this email.</p>
+            <p>Thank you,<br>The Meeristore Team</p>
+        </div>
+    `;
 
+    // try {
+    //     console.log('Sending email to:', recipients);
+    //     console.log('Name:', name);
+    //     console.log('Reset Link:', resetLink);
 
-    return await transport.sendMail({
+    //     const info = await transport.sendMail({
+    //         from: process.env.MAIL_SENDER,
+    //         to: recipients,
+    //         subject: 'Meeristore Reset Password!',
+    //         text: message,
+    //         html: htmlContent,
+    //     });
+    //     console.log("Email sent:", info.response);
+    //     return info;
+    // } catch (error) {
+    //     console.error("Error sending email:", error);
+    //     throw new Error("Email sending failed");
+    // }
+        return await transport.sendMail({
         from: process.env.MAIL_SENDER,
         to: recipients,
-        subject: 'Meeristore reset Password!',
+        subject: 'Meeristore Reset Password!',
         text: message,
-        html: resetEmailHtml,
+        html: htmlContent,
     }), (error, info) => {
         if (error) {
             console.error("Error:", error);
@@ -37,5 +54,6 @@ const sendemailrestpass = async ({ recipients, message ,name,resetLink :resetLin
         }
     };
 };
+
 
 module.exports = sendemailrestpass;
