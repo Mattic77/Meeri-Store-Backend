@@ -59,7 +59,23 @@ router.use(
 
 
 
+router.put('/setpassword/:id',async(req,res)=>{
+    const { password } = req.body
+    const user = await User.findOne({resetToken : req.params.id})
+    if(!user){
+        res.status(401).json({message : "invalid request "})
+    }
+    if(user.resetTokenExpiration< Date.now()){
+                res.status(401).json({message : " expired token  "})
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    user.passwordhash= hashedPassword;
+    user.save()
+    res.status(200).json({message : "password changed succefuly"})
 
+
+})
 
 
 router.get('/countusers', async (req, res) => {
