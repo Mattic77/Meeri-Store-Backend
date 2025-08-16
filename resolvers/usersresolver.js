@@ -104,7 +104,7 @@ const resolvers = {
             return { message: "An error occurred while processing your request" };
         }
     },
-    userLogin :async (args)=>{
+    userLogin :async (args,context)=>{
         const {email , password} = args.input;
         const user = await User.findOne({ email });
         if (!user) {
@@ -113,7 +113,7 @@ const resolvers = {
         
         const validPassword = await bcrypt.compare(password, user.passwordhash);
         if (!validPassword) {
-            return res.status(400).json({ message: 'Invalid password' });
+            return { message: 'Invalid password' };
         }
     
         const token = jwt.sign(

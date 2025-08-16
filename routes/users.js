@@ -88,8 +88,24 @@ router.get('/countusers', async (req, res) => {
     }
 });
 
-router.put('Moderator/:id',async(req,res)=>{
-    
+router.put('/moderator/:id',async(req,res)=>{
+            const user = await  verifyTokenAdmin(req)
+if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(404).json({ success: false, message: 'Invalid user ID' });
+    }
+    const updateduser = await User.findByIdAndUpdate(
+        req.params.id,
+        {
+            
+           isModerator: req.body.isModerator,
+        },
+        { new: true }
+    ).select('username  isModerator updatedAt'); 
+
+    if (!updateduser) {
+        return res.status(404).send('The user cannot be updated');
+    }
+    res.send({updateduser});
 
 })
 router.put('/Update/:id', async (req, res) => {
