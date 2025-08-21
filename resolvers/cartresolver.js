@@ -102,6 +102,7 @@ const resolvers = {
                             name: productInfo.Productid.name,
                             description: productInfo.Productid.description,
                             Price: productInfo.Productid.Price,
+                            images : productInfo.Productid.images
                         },  
                         size : productInfo.size,
                         color : productInfo.color,
