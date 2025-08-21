@@ -102,11 +102,10 @@ const resolvers = {
                             name: productInfo.Productid.name,
                             description: productInfo.Productid.description,
                             Price: productInfo.Productid.Price,
-                            images : productInfo.Productid.images
-                        },  
-                        size : productInfo.size,
-                        color : productInfo.color,
-                        quantityselect: productInfo.quantityselect,
+                            images: productInfo.Productid.images?.length > 0  ? [productInfo.Productid.images[0]] : []    ,  },                 
+                             size : productInfo.size,
+                              color : productInfo.color,
+                              quantityselect: productInfo.quantityselect,
                         sum: productInfo.sum,
                     })),
                     userid: {
