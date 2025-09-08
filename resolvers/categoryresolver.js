@@ -23,8 +23,8 @@ const resolvers = {
 
     CategoryGET: async () => {
         try {
-            const categories = await Category.find();
-            if (!categories) {
+        const categories = await Category.find().sort({ createdAt: -1 }); 
+                    if (!categories) {
                 return { success: false, message: 'No categories found.' };
             }
             return categories;

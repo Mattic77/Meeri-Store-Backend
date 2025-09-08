@@ -87,10 +87,13 @@ const resolvers = {
     
     cartGETByuser: async (args, context) => {
         try {
-            const user = await GetidfromToken(context.req); // Get user from the token
+            const user = await GetidfromToken(context.req); 
             const cart = await Cart.find({ userid: user._id })
-                .populate('userid') // Populate user details
-                .populate('ProductList.Productid'); // Populate product details in ProductList
+                .populate({
+                    path: 'userid',
+                    select: '_id username' // Only return _id and username
+                })
+                .populate('ProductList.Productid'); // keep full product info for now
 
             if (cart && cart.length > 0) {
                 // Transform the cart data to match the GraphQL schema
