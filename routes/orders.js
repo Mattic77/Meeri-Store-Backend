@@ -212,7 +212,7 @@ router.post('/Createorder', async (req, res) => {
         session.endSession();
     }
 });
-router.put('/statuschange/:idorder', async (req, res) => {
+router.put('/statuschange/:id', async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     

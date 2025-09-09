@@ -120,41 +120,53 @@ router.get('/Get/:id',async (req,res)=>{
  * @access public
  */
 router.put('/Update/:id', upload.single('icon'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { name, typestore, existingIcon } = req.body;
-  
-      let iconUrl = existingIcon;
-  
-     
-      if (req.file) {
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'categories', 
-        });
-        iconUrl = result.secure_url; 
+  try {
+            const user = await verifyTokenModerator(req);
+
+    const { id } = req.params;
+    const { name, typestore, existingIcon } = req.body;
+
+    let iconUrl = existingIcon;
+
+    if (req.file) {
+      // Delete the old icon if it exists
+      if (existingIcon && existingIcon.includes('res.cloudinary.com')) {
+        const publicId = existingIcon.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
       }
-  
-      // Update the category in the database
-      const updatedCategory = await Category.findByIdAndUpdate(
-        id,
-        {
-          name,
-          icon: iconUrl,
-          typestore,
-        },
-        { new: true } // Return the updated document
-      );
-  
-      if (!updatedCategory) {
-        return res.status(404).send('The category cannot be updated');
-      }
-  
-      res.send(updatedCategory);
-    } catch (error) {
-      console.error('Error updating category:', error);
-      res.status(500).send('Internal Server Error');
+
+      // Upload the new icon
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'categories',
+      });
+      iconUrl = result.secure_url;
+
+      // Remove local file
+      await unlinkAsync(req.file.path);
     }
-  });
+
+    // Update the category in the database
+    const updatedCategory = await Category.findByIdAndUpdate(
+      id,
+      {
+        name,
+        icon: iconUrl,
+        typestore,
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedCategory) {
+      return res.status(404).send('The category cannot be updated');
+    }
+
+    res.send(updatedCategory);
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 /**
  * @desc DELETE category
  * @method DELETE
