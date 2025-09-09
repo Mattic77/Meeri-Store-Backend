@@ -49,23 +49,26 @@ const resolvers = {
         }
         return product;
     },
-    productGETByname:async (args)=>{
-        try {
-            const product = await Product.findOne({ name: args.name }).populate({
-                path: 'category', // Populate the category field
-                model: 'Category', // Specify the model to populate
-                select: 'name _id ', // Only retrieve the category name
-            });
-            if (!product) {
-                return { success: false, message: 'Product not found' };
-            }
-            return product;
-        } catch (error) {
-            console.error('Error fetching product:', error);
-            return { success: false, error: error.message };
-        }
+productGETByname: async (args) => {
+  try {
+    const products = await Product.find({
+      name: { $regex: args.name, $options: "i" }
+    }).populate({
+      path: "category",
+      model: "Category",
+      select: "name _id",
+    });
 
-    },
+    if (!products || products.length === 0) {
+      return [];
+    }
+    return products;
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    throw new Error(error.message);
+  }
+},
+
     productCreate: async (args, context) => {
         try {
             const user = await verifyTokenModerator(context.req);

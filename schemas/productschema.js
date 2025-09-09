@@ -72,7 +72,7 @@ const GETschemma = buildSchema(`
        productGETById(_id :String) : Product
        productGET: [Product] 
        productGETBycategory(_id :String):response
-       productGETByname(name :String): Product
+       productGETByname(name :String): [Product]
        featuredproductGET: [Product]
     }
 
