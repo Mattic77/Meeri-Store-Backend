@@ -13,6 +13,7 @@ const { createHandler } = require("graphql-http/lib/use/express");
 const cloudinary = require ('cloudinary').v2
 const { verifyTokenModerator } = require('../helpers/verify');
 
+
 cloudinary.config({
      cloud_name : "djbdanrbf",
      secure : true,
@@ -119,53 +120,60 @@ router.get('/Get/:id',async (req,res)=>{
  * @route /api/categories/:id
  * @access public
  */
-router.put('/Update/:id', upload.single('icon'), async (req, res) => {
+const fs = require('fs').promises; // Add this at the top with other imports
+
+// Then in your update route:
+router.put('/update/:id', upload.single('icon'), async (req, res) => {
   try {
-            const user = await verifyTokenModerator(req);
-
+    const user = await verifyTokenModerator(req);
     const { id } = req.params;
-    const { name, typestore, existingIcon } = req.body;
+    const { name, typestore, description, existingIcon } = req.body;
+    
+    let iconUrl = existingIcon || "";
 
-    let iconUrl = existingIcon;
-
+    // If a new icon file was uploaded
     if (req.file) {
-      // Delete the old icon if it exists
-      if (existingIcon && existingIcon.includes('res.cloudinary.com')) {
-        const publicId = existingIcon.split('/').pop().split('.')[0];
-        await cloudinary.uploader.destroy(publicId);
+      // Delete old icon from Cloudinary if it exists
+      if (existingIcon) {
+        try {
+          const urlParts = existingIcon.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          const publicId = `categories/${filename.split('.')[0]}`;
+          await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+          console.error("Failed to delete old icon:", err);
+        }
       }
 
-      // Upload the new icon
+      // Upload new icon
       const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'categories',
+        folder: 'categories'
       });
       iconUrl = result.secure_url;
-
-      // Remove local file
-      await unlinkAsync(req.file.path);
+      
+      // Clean up uploaded file using fs.promises
+      await fs.unlink(req.file.path); // Changed from unlinkAsync to fs.unlink
     }
 
-    // Update the category in the database
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
-      {
-        name,
-        icon: iconUrl,
-        typestore,
+      { 
+        name, 
+        typestore, 
+        description,
+        icon: iconUrl 
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
-    if (!updatedCategory) {
-      return res.status(404).send('The category cannot be updated');
-    }
-
-    res.send(updatedCategory);
+    if (!updatedCategory) return res.status(404).send("Category not found");
+    res.status(200).json(updatedCategory);
   } catch (error) {
-    console.error('Error updating category:', error);
-    res.status(500).send('Internal Server Error');
+    console.error("Error updating category:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
+
 
 /**
  * @desc DELETE category
