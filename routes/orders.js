@@ -309,7 +309,7 @@ router.put('/statuschange/:id', async (req, res) => {
 });
 router.get('/searchorderbyid/:id', async (req, res) => {
   try {
-    const order = await Order.findOne({ idorder: req.params.id });
+    const order = await Order.findOne({ idorder: req.params.id }).populate("orderitems.product") ;
 
     if (!order) {
       return res.status(404).json({ message: "Order not found", order: null });

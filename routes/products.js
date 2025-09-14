@@ -110,24 +110,32 @@ router.put('/editProduct/:id', upload.array('images', 10), async (req, res) => {
         }
 
         // Process updated images
-        if (value.images !== undefined) {
-            // Retain valid URLs and remove unwanted links
-            const validUrls = value.images.filter(url =>
-                /^https?:\/\/res\.cloudinary\.com\/.*$/.test(url)
-            );
+if (req.body.images) {
+  try {
+    const imageData = JSON.parse(req.body.images);
+    if (Array.isArray(imageData)) {
+      // Retain valid URLs and remove unwanted links
+      const validUrls = imageData.filter(url =>
+        typeof url === 'string' && /^https?:\/\/res\.cloudinary\.com\/.*$/.test(url)
+      );
 
-            // Delete old images not in the new valid list
-            const imagesToDelete = product.images.filter(img => !validUrls.includes(img));
-            if (imagesToDelete.length > 0) {
-                const deletePromises = imagesToDelete.map(imageUrl =>
-                    cloudinary.uploader.destroy(imageUrl.split('/').pop().split('.')[0])
-                );
-                await Promise.all(deletePromises);
-            }
+      // Delete old images not in the new valid list
+      const imagesToDelete = product.images.filter(img => !validUrls.includes(img));
+      if (imagesToDelete.length > 0) {
+        const deletePromises = imagesToDelete.map(imageUrl =>
+          cloudinary.uploader.destroy(imageUrl.split('/').pop().split('.')[0])
+        );
+        await Promise.all(deletePromises);
+      }
 
-            // Update product images with valid URLs
-            product.images = validUrls;
-        }
+      // Update product images with valid URLs
+      product.images = validUrls;
+    }
+  } catch (err) {
+    console.error('Error parsing images:', err);
+    // Handle error or continue without updating images
+  }
+}
 
         // Handle new image uploads
         if (req.files && req.files.length > 0) {

@@ -40,9 +40,9 @@ const resolvers = {
           const orders = await Order.find({})
           .populate('user')
           .populate('orderitems.product');
-        
+          
 
-                  
+          
           return orders;
         } catch (error) {
           throw new Error('Error fetching orders: ' + error.message);
