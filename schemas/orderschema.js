@@ -182,6 +182,7 @@ const POSTschemma = buildSchema(`
 
   input DeleteInput {
     _id: String
+    password:String
   }
 
   input statusINPUT {

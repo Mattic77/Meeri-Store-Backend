@@ -306,7 +306,12 @@ const resolvers = {
         try {
             const user = await GetidfromToken(context.req); 
             const order = await Order.findById(args.input._id);  // Find the order by its ID
-            
+            const isPasswordValid = await bcrypt.compare(args.input.password, user.passwordhash);
+                        if (!isPasswordValid) {
+                            return {
+                                message: 'Invalid password',
+                            };
+                        }
             if (!order) {
                 return {
                     message: 'Order not found',
@@ -314,7 +319,7 @@ const resolvers = {
             }
     
             // Check if the order's status is 'pending'
-            if (order.status !== "pending") {
+            if (order.status !== "en cours de confirmation") {
                 return{
                     message: 'Cannot delete an order that is not pending'
                 }
