@@ -85,6 +85,7 @@ const validationupdate = Joi.object({
             ).optional(),
         })
     ).optional(),
+    existingImages: Joi.array().items(Joi.string().uri()).optional(),
 });
 
 const Product = mongoose.model('Product', Productschema);

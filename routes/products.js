@@ -92,70 +92,63 @@ router.put('/editProduct/:id', upload.array('images', 10), async (req, res) => {
 
         const productId = req.params.id;
 
-        // Parse productdetail if it exists
-        if (req.body.productdetail) {
-            req.body.productdetail = JSON.parse(req.body.productdetail);
+        if (req.body.productdetail && typeof req.body.productdetail === 'string') {
+            try {
+                req.body.productdetail = JSON.parse(req.body.productdetail);
+            } catch (e) {
+                return res.status(400).send('Invalid productdetail JSON');
+            }
         }
 
-        // Validate request body against Joi validation schema
-        const { error, value } = validationupdate.validate(req.body);
-        if (error) {
-            return res.status(400).send(error.details[0].message);
-        }
 
-        // Find the existing product
-        let product = await Product.findById(productId);
-        if (!product) {
-            return res.status(404).send('Product not found');
-        }
-
-        // Process updated images
-if (req.body.images) {
-  try {
-    const imageData = JSON.parse(req.body.images);
-    if (Array.isArray(imageData)) {
-      // Retain valid URLs and remove unwanted links
-      const validUrls = imageData.filter(url =>
-        typeof url === 'string' && /^https?:\/\/res\.cloudinary\.com\/.*$/.test(url)
-      );
-
-      // Delete old images not in the new valid list
-      const imagesToDelete = product.images.filter(img => !validUrls.includes(img));
-      if (imagesToDelete.length > 0) {
-        const deletePromises = imagesToDelete.map(imageUrl =>
-          cloudinary.uploader.destroy(imageUrl.split('/').pop().split('.')[0])
-        );
-        await Promise.all(deletePromises);
-      }
-
-      // Update product images with valid URLs
-      product.images = validUrls;
+// ✅ Parse existingImages → et stockez-le DANS existingImages
+if (req.body.existingImages && typeof req.body.existingImages === 'string') {
+    try {
+        req.body.existingImages = JSON.parse(req.body.existingImages); // ✅ ICI : on remplace la string par le tableau
+    } catch (e) {
+        return res.status(400).send('Invalid existingImages JSON');
     }
-  } catch (err) {
-    console.error('Error parsing images:', err);
-    // Handle error or continue without updating images
-  }
 }
 
-        // Handle new image uploads
-        if (req.files && req.files.length > 0) {
-            const uploadPromises = req.files.map(file =>
-                cloudinary.uploader.upload(file.path, {
-                    folder: 'products', // Optional: Specify folder in Cloudinary
-                })
-            );
+// ✅ MAINTENANT, Joi verra un tableau → validation réussie
+const { error, value } = validationupdate.validate(req.body);
+if (error) {
+    return res.status(400).send(error.details[0].message);
+}
 
-            // Wait for all uploads to complete
-            const uploadResults = await Promise.all(uploadPromises);
+// ✅ Ensuite, utilisez value.existingImages pour mettre à jour les images du produit
+let product = await Product.findById(productId);
 
-            // Extract secure URLs from the upload results
-            const newImageUrls = uploadResults.map(result => result.secure_url);
-            product.images = product.images.concat(newImageUrls);
+// Supprimez les anciennes images non conservées
+if (Array.isArray(value.existingImages)) {
+    const validUrls = value.existingImages.filter(url =>
+        typeof url === 'string' && /^https?:\/\/res\.cloudinary\.com\/.*$/.test(url)
+    );
 
-            // Remove uploaded files from local storage
-            await Promise.all(req.files.map(file => unlinkAsync(file.path)));
-        }
+    const imagesToDelete = product.images.filter(img => !validUrls.includes(img));
+    if (imagesToDelete.length > 0) {
+        const deletePromises = imagesToDelete.map(imageUrl => {
+            const publicId = imageUrl.split('/').pop().split('.')[0];
+            return cloudinary.uploader.destroy(publicId);
+        });
+        await Promise.all(deletePromises);
+    }
 
+    product.images = validUrls; // ✅ On part des URLs existantes
+}
+
+// ✅ Ajoutez les nouvelles images uploadées (req.files)
+if (req.files && req.files.length > 0) {
+    const uploadPromises = req.files.map(file =>
+        cloudinary.uploader.upload(file.path, { folder: 'products' })
+    );
+    const uploadResults = await Promise.all(uploadPromises);
+    const newImageUrls = uploadResults.map(result => result.secure_url);
+    product.images = [...product.images, ...newImageUrls]; // ✅ Ajout aux existantes
+
+    // Nettoyage fichiers locaux
+    await Promise.all(req.files.map(file => unlinkAsync(file.path)));
+}
         // Update other product fields
         const fieldsToUpdate = ['name', 'description', 'richDescription', 'brand', 'Price', 'category', 'CountINStock', 'rating', 'IsFeatured', 'productdetail'];
         fieldsToUpdate.forEach(field => {
@@ -166,7 +159,8 @@ if (req.body.images) {
 
         // Save the updated product
         product = await product.save();
-        res.status(200).send(product);
+        res.status(200).json(product);
+        
     } catch (err) {
         console.error('Server Error:', err);
         res.status(500).send('Server Error: ' + err.message);
