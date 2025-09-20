@@ -87,6 +87,10 @@ const Orderschema = new mongoose.Schema({
       type: Number,
       default: 0,
     },
+        adomicile: {
+      type : Boolean,
+      default : false
+    },
     user: {
       type: mongoose.Types.ObjectId,
       ref: 'User',

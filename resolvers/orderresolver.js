@@ -10,7 +10,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 const sendOrderEmail = require('../Email/Order/ordermail')
 const sendUpdateOrderEmail =require('../Email/Order/updateordermail')
-const incrementOrderId = async () => {
+const fs = require('fs');
+const path = require('path');
+ const incrementOrderId = async () => {
     const counter = await Counter.findOneAndUpdate(
       { name: 'orderId' },
       { $inc: { count: 1 } },
@@ -31,7 +33,35 @@ const incrementOrderId = async () => {
   
     return complexOrderId;
   };
+  const deliveryFilePath = path.join(__dirname, '../Data/delivery.json');
   
+  // Read the JSON file
+  let deliveryData;
+  try {
+    const rawData = fs.readFileSync(deliveryFilePath);
+     deliveryData = JSON.parse(rawData);
+   } catch (err) {
+    console.error('Error reading delivery.json:', err);
+    process.exit(1); 
+   }
+  const getDeliveryPricesByWilaya = (wilayaName) => {
+    if (!wilayaName || typeof wilayaName !== 'string') {
+        return null;
+    }
+
+    const wilayaData = deliveryData.delivery_prices.find(
+        w => w.wilaya === wilayaName
+    );
+
+    if (!wilayaData) {
+        return null;
+    }
+
+    return {
+        a_domicile: wilayaData.a_domicile || 0,
+        stop_desk: wilayaData.stop_desk || 0
+    };
+    };
 const resolvers = {
     orderGET: async (args,context) => {
         try {
@@ -56,46 +86,34 @@ const resolvers = {
         const userT = await GetidfromToken(context.req);
         const orderitems = args.input.orderitems;
 
-        // 1. Fetch products with session for transaction
+        // Import missing? Add at top of file:
+        // const fs = require('fs');
+        // const path = require('path');
+
+        // 1. Fetch products
         const productIds = orderitems.map(item => item.product);
         const products = await Product.find({ _id: { $in: productIds } }).session(session);
 
-        // 2. Calculate totals and prepare order items
+        // 2. Calculate totals
         let totalQuantity = 0;
         let totalPrice = 0;
         const orderItemsData = [];
 
-        // 3. First pass: validate stock availability
+        // 3. Validate stock
         for (const item of orderitems) {
             const quantity = Number(item.quantity);
             const product = products.find(p => p._id.equals(item.product));
             
-            if (!product) {
-                throw new Error(`Product ${item.product} not found`);
-            }
+            if (!product) throw new Error(`Product ${item.product} not found`);
 
-            // Find matching color and size
-            const productDetail = product.productdetail.find(
-                pd => pd.color === item.color
-            );
-            
-            if (!productDetail) {
-                throw new Error(`Color ${item.color} not available for product ${product.name}`);
-            }
+            const productDetail = product.productdetail.find(pd => pd.color === item.color);
+            if (!productDetail) throw new Error(`Color ${item.color} not available`);
 
-            const sizeObj = productDetail.sizes.find(
-                s => s.size === item.size
-            );
-            
-            if (!sizeObj) {
-                throw new Error(`Size ${item.size} not available for product ${product.name}`);
-            }
+            const sizeObj = productDetail.sizes.find(s => s.size === item.size);
+            if (!sizeObj) throw new Error(`Size ${item.size} not available`);
 
-            if (sizeObj.stock < quantity) {
-                throw new Error(`Insufficient stock for ${product.name} (${item.color}, ${item.size})`);
-            }
+            if (sizeObj.stock < quantity) throw new Error(`Insufficient stock`);
 
-            // Calculate price
             const price = product.Price * quantity;
             totalPrice += price;
             totalQuantity += quantity;
@@ -108,25 +126,50 @@ const resolvers = {
                 priceproduct: price
             });
         }
+            console.log(args.input.livprice )
+            // 4. Validate delivery price
+            const wilayaToUse = userT.wilaya || args.input.wilaya; // ✅ Fallback sur input
 
-        // 4. Second pass: update stock
+            if (!wilayaToUse) {
+                throw new Error("Wilaya is required to calculate delivery price");
+            }
+
+            const deliveryPrices = getDeliveryPricesByWilaya(wilayaToUse);
+
+            if (!deliveryPrices) {
+                throw new Error(`Delivery prices not found for wilaya: ${wilayaToUse}`);
+            }
+
+            const validDeliveryPrices = [deliveryPrices.a_domicile, deliveryPrices.stop_desk];
+
+            console.log("Delivery prices for", wilayaToUse, ":", deliveryPrices);
+
+            if (!validDeliveryPrices.includes(args.input.livprice)) {
+                throw new Error(`Invalid delivery price. Expected one of: ${validDeliveryPrices.join(', ')}`);
+}
+
+        // 5. Set delivery type
+        let adomicile = null;
+        if (args.input.livprice === deliveryPrices.a_domicile) {
+            adomicile = true;
+        } else if (args.input.livprice === deliveryPrices.stop_desk) {
+            adomicile = false;
+        }
+
+        // 6. Update stock
         for (const item of orderitems) {
             const product = products.find(p => p._id.equals(item.product));
             const quantity = Number(item.quantity);
 
-            // Find and update the specific size stock
-            const productDetail = product.productdetail.find(
-                pd => pd.color === item.color
-            );
-            const sizeObj = productDetail.sizes.find(
-                s => s.size === item.size
-            );
-            
+            const productDetail = product.productdetail.find(pd => pd.color === item.color);
+            const sizeObj = productDetail.sizes.find(s => s.size === item.size);
             sizeObj.stock -= quantity;
-            await product.save({ session });
         }
 
-        // 5. Create the order
+        // Save all products at once
+        await Promise.all(products.map(p => p.save({ session })));
+
+        // 7. Create order
         const orderId = await incrementOrderId();
         const order = new Order({
             firstname: userT.firstname || args.input.firstname,
@@ -142,21 +185,20 @@ const resolvers = {
             quantityOrder: totalQuantity,
             user: userT._id,
             idorder: orderId,
+            adomicile: adomicile
         });
 
         const savedOrder = await order.save({ session });
-
-        // 6. Commit transaction
         await session.commitTransaction();
 
-        // 7. Send email (outside transaction)
+        // 8. Send email
         const userF = await User.findById(userT._id);
-        const orderDetails = orderitems.map((item) => {
+        const orderDetails = orderitems.map(item => {
             const product = products.find(p => p._id.equals(item.product));
             return {
-                productName: product ? product.name : 'Unknown Product',
+                productName: product?.name || 'Unknown',
                 quantity: item.quantity,
-                price: product ? product.Price : 0,
+                price: product?.Price || 0,
                 color: item.color,
                 size: item.size,
             };
@@ -167,8 +209,12 @@ const resolvers = {
             recipient: userF.email,
             name: userF.username,
             orderDetails,
-            totalPrice,
+            productTotal: totalPrice,
+            deliveryFee: args.input.livprice,
+            grandTotal: totalPrice + (args.input.livprice || 0),
         });
+
+        console.log(`✅ Order created: ${orderId} for ${userF.username}`);
 
         return {
             user: userF,
@@ -179,59 +225,43 @@ const resolvers = {
 
     } catch (error) {
         await session.abortTransaction();
-        console.error('Error creating order:', error);
-        throw new Error(error.message || 'An error occurred while creating the order.');
+        console.error('❌ Order creation failed:', error.message);
+        throw new Error(`Order creation failed: ${error.message}`);
     } finally {
         session.endSession();
     }
 },
-   createOrderAnonym: async (args, context) => {
+createOrderAnonym: async (args, context) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     
     try {
         const orderitems = args.input.orderitems;
 
-        // 1. Fetch products with session for transaction
+        // 1. Fetch products
         const productIds = orderitems.map(item => item.product);
         const products = await Product.find({ _id: { $in: productIds } }).session(session);
 
-        // 2. Calculate totals and prepare order items
+        // 2. Calculate totals
         let totalQuantity = 0;
         let totalPrice = 0;
         const orderItemsData = [];
 
-        // 3. First pass: validate stock availability
+        // 3. Validate stock
         for (const item of orderitems) {
             const quantity = Number(item.quantity);
             const product = products.find(p => p._id.equals(item.product));
             
-            if (!product) {
-                throw new Error(`Product ${item.product} not found`);
-            }
+            if (!product) throw new Error(`Product ${item.product} not found`);
 
-            // Find matching color and size
-            const productDetail = product.productdetail.find(
-                pd => pd.color === item.color
-            );
-            
-            if (!productDetail) {
-                throw new Error(`Color ${item.color} not available for product ${product.name}`);
-            }
+            const productDetail = product.productdetail.find(pd => pd.color === item.color);
+            if (!productDetail) throw new Error(`Color ${item.color} not available`);
 
-            const sizeObj = productDetail.sizes.find(
-                s => s.size === item.size
-            );
-            
-            if (!sizeObj) {
-                throw new Error(`Size ${item.size} not available for product ${product.name}`);
-            }
+            const sizeObj = productDetail.sizes.find(s => s.size === item.size);
+            if (!sizeObj) throw new Error(`Size ${item.size} not available`);
 
-            if (sizeObj.stock < quantity) {
-                throw new Error(`Insufficient stock for ${product.name} (${item.color}, ${item.size})`);
-            }
+            if (sizeObj.stock < quantity) throw new Error(`Insufficient stock`);
 
-            // Calculate price
             const price = product.Price * quantity;
             totalPrice += price;
             totalQuantity += quantity;
@@ -245,24 +275,48 @@ const resolvers = {
             });
         }
 
-        // 4. Second pass: update stock
+        // 4. Validate delivery price
+        const wilayaToUse = args.input.wilaya;
+
+        if (!wilayaToUse) {
+            throw new Error("Wilaya is required to calculate delivery price");
+        }
+
+        const deliveryPrices = getDeliveryPricesByWilaya(wilayaToUse);
+
+        if (!deliveryPrices) {
+            throw new Error(`Delivery prices not found for wilaya: ${wilayaToUse}`);
+        }
+
+        const validDeliveryPrices = [deliveryPrices.a_domicile, deliveryPrices.stop_desk];
+
+        if (!validDeliveryPrices.includes(args.input.livprice)) {
+            throw new Error(`Invalid delivery price. Expected one of: ${validDeliveryPrices.join(', ')}`);
+        }
+
+        // 5. Set delivery type
+        let adomicile;
+        if (args.input.livprice === deliveryPrices.a_domicile) {
+            adomicile = true;
+        } else if (args.input.livprice === deliveryPrices.stop_desk) {
+            adomicile = false;
+        } else {
+            throw new Error(`Unable to determine delivery type for price: ${args.input.livprice}`);
+        }
+
+        // 6. Update stock (all at once)
         for (const item of orderitems) {
             const product = products.find(p => p._id.equals(item.product));
             const quantity = Number(item.quantity);
 
-            // Find and update the specific size stock
-            const productDetail = product.productdetail.find(
-                pd => pd.color === item.color
-            );
-            const sizeObj = productDetail.sizes.find(
-                s => s.size === item.size
-            );
-            
+            const productDetail = product.productdetail.find(pd => pd.color === item.color);
+            const sizeObj = productDetail.sizes.find(s => s.size === item.size);
             sizeObj.stock -= quantity;
-            await product.save({ session });
         }
 
-        // 5. Create the order
+        await Promise.all(products.map(p => p.save({ session })));
+
+        // 7. Create order
         const orderId = await incrementOrderId();
         const order = new Order({
             firstname: args.input.firstname,
@@ -277,12 +331,36 @@ const resolvers = {
             totalprice: totalPrice + (args.input.livprice || 0),
             quantityOrder: totalQuantity,
             idorder: orderId,
+            adomicile: adomicile, // ✅ Maintenant sauvegardé
         });
 
         const savedOrder = await order.save({ session });
-
-        // 6. Commit transaction
         await session.commitTransaction();
+
+        // 8. (Optionnel) Send email to customer
+        // Si vous voulez envoyer un email à l'utilisateur anonyme :
+        /*
+        await sendOrderEmail({
+            idorder: orderId,
+            recipient: args.input.email,
+            name: `${args.input.firstname} ${args.input.lastname}`,
+            orderDetails: orderitems.map(item => {
+                const product = products.find(p => p._id.equals(item.product));
+                return {
+                    productName: product?.name || 'Unknown',
+                    quantity: item.quantity,
+                    price: product?.Price || 0,
+                    color: item.color,
+                    size: item.size,
+                };
+            }),
+            productTotal: totalPrice,
+            deliveryFee: args.input.livprice,
+            grandTotal: totalPrice + (args.input.livprice || 0),
+        });
+        */
+
+        console.log(`✅ Anonymous order created: ${orderId} for ${args.input.email}`);
 
         return {
             orderitems: orderItemsData,
@@ -292,8 +370,8 @@ const resolvers = {
 
     } catch (error) {
         await session.abortTransaction();
-        console.error('Error creating anonymous order:', error);
-        throw new Error(error.message || 'An error occurred while creating the order.');
+        console.error('❌ Anonymous order creation failed:', error.message);
+        throw new Error(`Order creation failed: ${error.message}`);
     } finally {
         session.endSession();
     }
@@ -305,7 +383,7 @@ const resolvers = {
     orderDELETE: async (args, context) => {
         try {
             const user = await GetidfromToken(context.req); 
-            const order = await Order.findById(args.input._id);  // Find the order by its ID
+            const order = await Order.findById(args.input._id);  
             const isPasswordValid = await bcrypt.compare(args.input.password, user.passwordhash);
                         if (!isPasswordValid) {
                             return {
