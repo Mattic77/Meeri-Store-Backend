@@ -83,13 +83,17 @@ const Orderschema = new mongoose.Schema({
     totalprice: {
       type: Number,
     },
+    profiteprice:{
+            type: Number,
+
+    },
     quantityOrder: {
       type: Number,
       default: 0,
     },
         adomicile: {
       type : Boolean,
-      default : false
+      default: null,
     },
     user: {
       type: mongoose.Types.ObjectId,

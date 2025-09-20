@@ -185,7 +185,9 @@ const resolvers = {
             quantityOrder: totalQuantity,
             user: userT._id,
             idorder: orderId,
-            adomicile: adomicile
+            adomicile: adomicile,
+            profiteprice: totalPrice  
+
         });
 
         const savedOrder = await order.save({ session });
@@ -331,7 +333,8 @@ createOrderAnonym: async (args, context) => {
             totalprice: totalPrice + (args.input.livprice || 0),
             quantityOrder: totalQuantity,
             idorder: orderId,
-            adomicile: adomicile, // ✅ Maintenant sauvegardé
+            adomicile: adomicile,
+            profiteprice: totalPrice  
         });
 
         const savedOrder = await order.save({ session });
