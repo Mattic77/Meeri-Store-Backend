@@ -31,6 +31,15 @@ router.get('/countordersconfirm', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+router.get('/countorderslivre', async (req, res) => {
+    try {
+        const user = await  verifyTokenModerator(req)
+        const countorders = await Order.countDocuments({status : "livré"});
+        res.status(200).send({ success: true, count: countorders });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 router.get('/totalprice', async (req, res) => {
     try {
         const user = await verifyTokenModerator(req);
