@@ -40,6 +40,26 @@ router.get('/countorderslivre', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+router.get('/totalorderslivre', async (req, res) => {
+    try {
+        const user = await verifyTokenModerator(req);
+        if (!user) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
+        const result = await Order.aggregate([
+            { $match: { status: "livré" } },
+            { $group: { _id: null, total: { $sum: "$profiteprice" } } } // ✅ totalprice (minuscule)
+        ]);
+
+        const total = result.length > 0 ? result[0].total : 0;
+
+        res.status(200).json({ success: true, total });
+    } catch (err) {
+        console.error("Error calculating total for delivered orders:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 router.get('/totalprice', async (req, res) => {
     try {
         const user = await verifyTokenModerator(req);
