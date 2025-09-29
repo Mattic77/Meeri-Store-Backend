@@ -3,7 +3,13 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { Product,validationproduct,validationupdate} = require('../models/Product');
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' }); 
+const upload = multer({
+  dest: 'uploads/',
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 Mo max par fichier
+    files: 50                  // max 50 fichiers
+  }
+});
 const {GETschemma,POSTschemma} = require('../schemas/productschema');
 const resolvers = require('../resolvers/productresolver')
 const { createHandler } = require("graphql-http/lib/use/express");
@@ -43,7 +49,7 @@ router.get("/byname", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
+router.post('/CreateProduct', upload.array('images', 50), async (req, res) => {
     try {
         
         if (req.body.productdetail) {
@@ -108,7 +114,7 @@ const fs = require('fs');
 const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
 
-router.put('/editProduct/:id', upload.array('images', 10), async (req, res) => {
+router.put('/editProduct/:id', upload.array('images', 50), async (req, res) => {
     try {
         // Verify the token and get the user
         const user = await verifyTokenModerator(req);
