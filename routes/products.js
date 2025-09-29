@@ -17,6 +17,32 @@ cloudinary.config({
     api_key : process.env.CLOUD_API_KEY,
     api_secret : process.env.CLOUD_SECRET_KEY
 })
+router.get("/byname", async (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name) {
+      return res.status(400).json({ error: "Le paramètre 'name' est requis" });
+    }
+
+    const products = await Product.find({
+      name: { $regex: name, $options: "i" }
+    }).populate({
+      path: "category",
+      model: "Category",
+      select: "name _id",
+    });
+
+    if (!products || products.length === 0) {
+      return res.json([]); // pas d'erreur, juste tableau vide
+    }
+
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 router.post('/CreateProduct', upload.array('images', 10), async (req, res) => {
     try {
         

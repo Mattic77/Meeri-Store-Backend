@@ -83,6 +83,7 @@ const GETschemma = buildSchema(`
     dateordered: Date
     createdAt: Date
     updatedAt: Date
+    adomicile: Boolean
   }
 
   type response {

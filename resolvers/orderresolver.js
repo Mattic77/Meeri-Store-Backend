@@ -8,7 +8,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 dotenv.config();
-const sendOrderEmail = require('../Email/Order/ordermail')
+const {sendOrderEmail,sendAdminEmail} = require('../Email/Order/ordermail')
 const sendUpdateOrderEmail =require('../Email/Order/updateordermail')
 const fs = require('fs');
 const path = require('path');
@@ -215,6 +215,27 @@ const resolvers = {
             deliveryFee: args.input.livprice,
             grandTotal: totalPrice + (args.input.livprice || 0),
         });
+        await sendOrderEmail({
+    idorder: orderId,
+    recipient: userF.email,
+    name: userF.username,
+    orderDetails,
+    productTotal: totalPrice,
+    deliveryFee: args.input.livprice,
+    grandTotal: totalPrice + (args.input.livprice || 0),
+});
+
+        
+        await sendAdminEmail({
+            idorder: orderId,
+            customerName: `${userF.firstname} ${userF.lastname}`,
+            customerEmail: userF.email,
+            orderDetails,
+            productTotal: totalPrice,
+            deliveryFee: args.input.livprice,
+            grandTotal: totalPrice + (args.input.livprice || 0),
+        });
+
 
         console.log(`✅ Order created: ${orderId} for ${userF.username}`);
 
@@ -400,7 +421,7 @@ createOrderAnonym: async (args, context) => {
             }
     
             // Check if the order's status is 'pending'
-            if (order.status !== "en cours de confirmation") {
+            if (order.status === "en cours de confirmation" || order.status === "annulé") {
                 return{
                     message: 'Cannot delete an order that is not pending'
                 }

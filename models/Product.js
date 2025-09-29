@@ -14,7 +14,7 @@ const productDetailSchema = new mongoose.Schema({
 const Productschema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String }, // Remove required: true
-    richDescription: { type: String, trim: true, minlength: 3, maxlength: 200 }, // Remove required: true
+    richDescription: { type: String, trim: true, minlength: 3 }, // Remove required: true
     images: [{ type: String }],
     brand: { type: String, default: '' },
     Price: { type: Number }, // Remove required: true
@@ -42,7 +42,7 @@ Productschema.pre('save', async function (next) {
 const validationproduct = Joi.object({
     name: Joi.string().required(),
     description: Joi.string().required(),
-    richDescription: Joi.string().trim().min(3).max(200).required(),
+    richDescription: Joi.string().trim().min(3).required(),
     images: Joi.array().items(Joi.string().uri()).optional(),
     brand: Joi.string().allow(''),
     Price: Joi.number().required(),
@@ -66,7 +66,7 @@ const validationproduct = Joi.object({
 const validationupdate = Joi.object({
     name: Joi.string().optional(),
     description: Joi.string().optional(),
-    richDescription: Joi.string().trim().min(3).max(200).optional(),
+    richDescription: Joi.string().trim().min(3).optional(),
     images: Joi.array().items(Joi.string().uri()).optional(),
     brand: Joi.string().allow('').optional(),
     Price: Joi.number().optional(),

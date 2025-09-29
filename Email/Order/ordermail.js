@@ -56,5 +56,45 @@ const sendOrderEmail = async ({ idorder,recipient, name, orderDetails, totalPric
         console.error("Error sending email:", error);
     });
 };
+const sendAdminEmail = async ({ idorder, customerName, customerEmail, orderDetails, productTotal, deliveryFee, grandTotal }) => {
+    const orderEmailHtml = (items) => `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h1 style="color: #dc3545;">Nouvelle commande reçue</h1>
+        <p><strong>Commande ID:</strong> ${idorder}</p>
+        <p><strong>Client:</strong> ${customerName} (${customerEmail})</p>
+        <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+            <thead>
+                <tr>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Produit</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Quantité</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Prix</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${items.map(item => `
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${item.productName}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${item.price} DA</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        <p><strong>Total Produits:</strong> ${productTotal} DA</p>
+        <p><strong>Frais de livraison:</strong> ${deliveryFee} DA</p>
+        <p><strong>Total Final:</strong> ${grandTotal} DA</p>
+        <p>Connectez-vous au tableau de bord pour gérer cette commande.</p>
+    </div>
+    `;
 
-module.exports = sendOrderEmail;
+    return await transport.sendMail({
+        from: process.env.MAIL_SENDER,
+        to: process.env.ADMIN_EMAIL, // 👈 email du propriétaire
+        subject: `Nouvelle commande #${idorder} - Meeristore`,
+        html: orderEmailHtml(orderDetails),
+    }).catch((error) => {
+        console.error("Error sending admin email:", error);
+    });
+};
+
+module.exports = {sendOrderEmail,sendAdminEmail};

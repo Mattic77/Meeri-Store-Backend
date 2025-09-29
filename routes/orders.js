@@ -49,7 +49,7 @@ router.get('/totalorderslivre', async (req, res) => {
 
         const result = await Order.aggregate([
             { $match: { status: "livré" } },
-            { $group: { _id: null, total: { $sum: "$profiteprice" } } } // ✅ totalprice (minuscule)
+            { $group: { _id: null, total: { $sum: "$profiteprice" } } } 
         ]);
 
         const total = result.length > 0 ? result[0].total : 0;
